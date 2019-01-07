@@ -1,4 +1,3 @@
-#include "analysis.h"
 
 #define N_GEM 2; // Number of GEMS
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
@@ -9,31 +8,35 @@
 
 Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   
+  gSystem->Load("libbeam.so");
+
   TFile* rf_raw = TFile::Open(filename.Data());
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
-  cout << "ROOTFile " << filename << " is opened. " << endl;
+  cout << "Raw ROOTFile " << filename << " is opened. " << endl;
 
-  TString output_filename = filename.ReplaceAll(".root","_analyzed.root");
+  TString output_filename = filename.ReplaceAll(".root","_ped.root");
+  TFile* rf_ped = TFile::Open(ped_filename.Data());
+  cout << "Pedestal ROOTFile " << ped_filename << " is opened. " << endl;
+
+  TString output_filename = filename.ReplaceAll("_ped","_analyzed");
   TFile* rf_rec = TFile::Open(output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
 
   // Create Trees and Branches
   TTree *tree_rec = new TTree("tree_rec","Ped"); // Reconstructed Tree
   
-  GEMPlane gemPlane_1, gemPlane_2;
-  Track track;
-  QDC qdc;
-  leaflist_track.ReplaceAll("N_HITS_MAX",Form("%d",N_HITS_MAX));
-  leaflist_gem.ReplaceAll("N_HITS_MAX",Form("%d",N_HITS_MAX));
-  // cout << leaflist_gem << endl;
-  // cout << leaflist_track << endl;
-  TBranch *branch_qdc = tree_rec->Branch("qdc",&qdc,leaflist_qdc);
-  TBranch *branch_gem1 = tree_rec->Branch("gem1",&gemPlane_1,leaflist_gem);
-  TBranch *branch_gem2 = tree_rec->Branch("gem2",&gemPlane_2,leaflist_gem);
-  TBranch *branch_track = tree_rec->Branch("track",&track,leaflist_track);
+  BeamGEMPlane *gemPlane1 = new BeamGEMPlane();
+  BeamGEMPlane *gemPlane2 = new BeamGEMPlane();
+  BeamTracker *tracker = new BeamTracker();
+  BeamQDC *qdc = new BeamQDC();
+
+  TBranch *branch_qdc = tree_rec->Branch("qdc",qdc);
+  TBranch *branch_gem1 = tree_rec->Branch("gem1",gemPlane1);
+  TBranch *branch_gem2 = tree_rec->Branch("gem2",gemPlane2);
+  TBranch *branch_track = tree_rec->Branch("tracker",tracker);
   //_________________________________________________________________________________________
 
-  // * Pre-Analysis GEM : Get Pedestal From Gaussian Fit
+  // GEM common Variables
   const int ngem = N_GEM;
   const int napv = 6;  // number of apvs for each GEM
   const int nch = 128; // number of channel on each APV cards
@@ -42,29 +45,6 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 			   "y","y","y","y"};
   Int_t base[napv] = {0, 128, 
 		      0, 128 , 256, 384};
-  Double_t ped_mean[ngem][napv][nch]; // [napv][nch] : averaged by 6
-  Double_t ped_rms[ngem][napv][nch]; //[napv][nch]: averaged by sqrt(6)
-  
-  TString draw_text, hist_name;
-  TH1D* h_ped = new TH1D("h_ped","Buffer historgram for pedestal fit",1e4,-0.5,2e4-0.5);
-
-  for(int igem =0; igem< ngem; igem++){
-    for(int iapv=0; iapv< napv; iapv++){
-      for(int ich=0; ich<nch;ich++){
-	draw_text = Form("sbs.gems.%s%d.adc_sum[%d]",
-			 apv_tag[iapv].Data(),
-			 igem+1,
-			 ich+base[iapv]); // stripe number
-	// tree_raw->Draw(Form("%s >> h_ped", draw_text.Data()),"","goff");
-	// PedestalFit(h_ped,
-	// 	    ped_mean[igem][iapv][ich],
-	// 	    ped_rms[igem][iapv][ich]);
-	// cout << igem << "\t" << iapv << "\t" << ich << "\t" ;
-	// cout << ped_mean[igem][iapv][ich]  << "\t" << ped_rms[igem][iapv][ich]<< endl;
-      } 
-    } 
-  }
-  // * End Pre-Analysis
   //_________________________________________________________________________________________
   
   Double_t us_hi,us_lo,ds_hi,ds_lo; // dummy variables
