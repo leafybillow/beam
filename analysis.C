@@ -14,7 +14,7 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   cout << "Raw ROOTFile " << filename << " is opened. " << endl;
 
-  TString output_filename = filename.ReplaceAll(".root","_ped.root");
+  TString ped_filename = filename.ReplaceAll(".root","_ped.root");
   TFile* rf_ped = TFile::Open(ped_filename.Data());
   cout << "Pedestal ROOTFile " << ped_filename << " is opened. " << endl;
 
@@ -23,17 +23,22 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
 
   // Create Trees and Branches
-  TTree *tree_rec = new TTree("tree_rec","Ped"); // Reconstructed Tree
+  TTree* tree_rec = new TTree("Rec","Rec"); // Reconstructed Tree
   
-  BeamGEMPlane *gemPlane1 = new BeamGEMPlane();
-  BeamGEMPlane *gemPlane2 = new BeamGEMPlane();
-  BeamTracker *tracker = new BeamTracker();
-  BeamQDC *qdc = new BeamQDC();
+  BeamGEMPlane* gemPlane1 = new BeamGEMPlane();
+  BeamGEMPlane* gemPlane2 = new BeamGEMPlane();
+  BeamGEMTracker* tracker = new BeamGEMTracker();
+  struct QDC{
+    double us_lo;
+    double us_hi;
+    double ds_lo;
+    double ds_hi;
+  }qdc;
 
-  TBranch *branch_qdc = tree_rec->Branch("qdc",qdc);
-  TBranch *branch_gem1 = tree_rec->Branch("gem1",gemPlane1);
-  TBranch *branch_gem2 = tree_rec->Branch("gem2",gemPlane2);
-  TBranch *branch_track = tree_rec->Branch("tracker",tracker);
+  TBranch* branch_qdc = tree_rec->Branch("qdc",&qdc,"us_lo/D:us_hi:ds_lo:ds_hi");
+  TBranch* branch_gem1 = tree_rec->Branch("gem1",&gemPlane1);
+  TBranch* branch_gem2 = tree_rec->Branch("gem2",&gemPlane2);
+  TBranch* branch_track = tree_rec->Branch("tracker",&tracker);
   //_________________________________________________________________________________________
 
   // GEM common Variables
@@ -45,6 +50,9 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 			   "y","y","y","y"};
   Int_t base[napv] = {0, 128, 
 		      0, 128 , 256, 384};
+  Double_t cmn[ngem][napv];
+  Int_t nch_cmn = N_CH_CMN; // number of channels used for computing  common mode
+
   //_________________________________________________________________________________________
   
   Double_t us_hi,us_lo,ds_hi,ds_lo; // dummy variables
@@ -63,14 +71,23 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
     qdc.ds_lo = ds_lo;
     qdc.ds_hi = ds_hi;
     // -- Now, Analyze GEM 
-    //** Calculate Common Mode 
 
     //** Retrieve replayed data from the raw tree
-    //** Do Pedestal and Common Mode correction and fill 1D histograms
-    //** SearchHits in each readout coordinate from histogram
+    for(int igem=0; igem<2; igem++){
+      for(int iapv=0; iapv<napv; iapv++){
+	for(int ich=0; ich<nch; ich++){
+	  
+	}
+      }
+    }
+    //** Calculate Common Mode 
+
+    //** Do Pedestal and Common Mode correction 
+    //** Calculate amplitude from each stripes and fill into a 1D histogram
+    //** SearchHits in each readout coordinate from the 1D histogram
     //*** TestSplit 
     //** Verify  nhits match betweeen two readout coordinate
-    //** Calculate deposited charge in 1D
+    //** Calculate cluster charge in 1D
     //** Calculate Multiplicity in 1D 
     //** Calculate Position in 1D , using centroid for now
     //** Reconstruct 2D hits from correlation
@@ -86,37 +103,13 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   }  // End Event loop
   //_________________________________________________________________________________________
   rf_raw->Close();
-  
+  rf_ped->Close();
   tree_rec->Write();
   rf_rec->Close();
   return 0;
 }
 
 // User Define Functions
-void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
-
-  Int_t bin_max = h_ped->GetMaximumBin();
-  Double_t bincenter = h_ped->GetBinCenter(bin_max);
-  Double_t bin_content_max = h_ped->GetBinContent(bin_max);
-  Double_t rms = 100.0; // An initial guess
-
-  Double_t par[3]; 
-  par[0] = bin_content_max;
-  par[1] = bincenter;
-  par[2] = rms; 
-
-  TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
-  f_gaus->SetParameters(par);
-  h_ped->Fit("f_gaus","QN","",bincenter-2*rms,bincenter+2*rms);
-  
-  mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
-  sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6)
-
-  // Crude Process
-  // mean = bincenter;
-  // sigma = rms;
-}
-
 
 Double_t GetCommonMode(Int_t *arr_integral){
 }

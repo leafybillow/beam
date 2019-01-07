@@ -55,14 +55,13 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
 	
 	hped_mean[igem][iapv]->SetBinContent(ich+1,ped_mean);
 	hped_rms[igem][iapv]->SetBinContent(ich+1,ped_rms);
-	// cout << igem << "\t" << iapv << "\t" << ich << "\t" ;
-	// cout << ped_mean  << "\t" << ped_rms<< endl;
       } 
     } 
   }
   
   rf_raw->Close();
-  //Write the objects  
+
+  //Write  objects  
   for(int igem =0; igem<ngem;igem++){
     for(int iapv=0; iapv<napv; iapv++){
       hped_mean[igem][iapv]->Write();
@@ -91,5 +90,6 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
   h_ped->Fit("f_gaus","QN","",bincenter-2*rms,bincenter+2*rms);
   
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
-  sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), Don't ask why.
-}
+  sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
+
+ }
