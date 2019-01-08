@@ -5,4 +5,5 @@
 
 #pragma link C++ class BeamGEMPlane+;
 #pragma link C++ class BeamGEMTracker+;
+#pragma link C++ class BeamGEMStrip+;
 #endif

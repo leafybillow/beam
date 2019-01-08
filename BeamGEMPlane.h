@@ -1,7 +1,7 @@
 #include <TObject.h>
 #include <RooInt.h>
 #include <vector>
-#include "TH1.h"
+#include <TH1.h>
 using namespace std;
 
 class BeamGEMPlane: public TObject{
@@ -34,8 +34,8 @@ class BeamGEMPlane: public TObject{
 
   inline void  SetNHits(int n){nhits= n; };
   
-  inline vector<double> GetPositionX(){return pos_x;};
-  inline vector<double> GetPositionY(){return pos_y;};
+  inline vector<double> GetPositionX() const {return pos_x;};
+  inline vector<double> GetPositionY() const {return pos_y;};
   inline int GetNHits(){return nhits;};
   
   ClassDef(BeamGEMPlane,0);

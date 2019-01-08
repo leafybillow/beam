@@ -12,7 +12,7 @@ CXXFLAGS+= -g
 LIBS	:= $(ROOTLIBS)
 LDFLAGS := $(shell $(ROOTCONFIG) --ldflags)
 LD	:= $(shell $(ROOTCONFIG) --ld)
-OBJS	:= BeamGEMPlane.o BeamGEMTracker.o
+OBJS	:= BeamGEMPlane.o BeamGEMTracker.o BeamGEMStrip.o
 HDR	:= $(OBJS:.o=.h)
 
 all:  $(OBJS) beam_Dict beam
@@ -26,6 +26,6 @@ $(OBJS):
 beam: $(OBJS) beam_Dict.o
 	$(LD) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o lib$@.so;
 clean:
-	rm *.o;
-	rm *Dict*;	
-	rm *.so;	
+	rm -f *.o;
+	rm -f *Dict*;	
+	rm -f *.so;	
