@@ -1,4 +1,5 @@
 #include "BeamGEMProjection.h"
+#include <iostream>
 ClassImp(BeamGEMProjection);
 
 
@@ -31,8 +32,12 @@ int BeamGEMProjection::Process(){
     aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
     aHit.fMpl = ProcessMultiplicity(vecRange[iCluster]);
     aHit.fRes = ProcessResolution(vecRange[iCluster]);
+
     vHits.push_back(aHit);
   }
+
+  nHits = nClusters; // FIXME: just for now, we will check splitting 
+  SortHits();
 
   return 0;
 }
@@ -94,9 +99,36 @@ int BeamGEMProjection::ProcessMultiplicity(pair<int,int> prRange){
 
 double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
   double res = 115; // 400/sqrt(12) ,unit:  um
-  //Just a Crude way
+
   int mpl = prRange.second - prRange.first +1;
+  //This is a crude approach to spatial resolution
   res = res/ mpl; 
-  
   return res;
+}
+
+void BeamGEMProjection::SortHits(){
+  // Sort Hits by Charge Amplitude.
+  // We do this to prepare for correlation matching in Plane level 
+  // Bubble sort is used here
+  AHit aHit_buff;
+  for(int iHit=1; iHit<nHits; iHit++){
+    for(int jHit=0; jHit<iHit; jHit++){
+      if(vHits[jHit].fCharge > vHits[iHit].fCharge){
+	aHit_buff = vHits[iHit];
+	vHits[iHit] = vHits[jHit];
+	vHits[jHit] = aHit_buff;
+      }
+    }
+  }
+}
+
+int BeamGEMProjection::CheckNStrips(){
+  if((strName=="x" && nStrips == 256) || (strName=="y" &&nStrips==512)){
+    return 0;
+  }
+  else{
+    std::cout << "Error: Number of Strips mismatches the Projection belonged to" << std::endl;
+    return 1;
+  }
+
 }

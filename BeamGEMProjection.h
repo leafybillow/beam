@@ -27,20 +27,16 @@ class BeamGEMProjection: public TObject{
   TH1D* h_proj;
   
   inline vector< AHit> GetHits() const {return vHits;};
-  /* inline vector<double> GetPosition() const{ return fPosition;}; */
-  /* inline vector<double> GetCharge() const{ return fCharge;}; */
-  /* inline vector<double> GetResolution() const {return fRes;} */
-  /* inline vector<double> GetMultiplicity() const{ return fMpl;}; */
   inline bool GetSplitFlag() const {return isSplit;};
   inline int GetNHits() const {return nHits;};
 
   vector< pair<int,int> > SearchClusters();
-  
+  void SortHits(); 
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   double ProcessResolution(pair<int,int>);
   int ProcessMultiplicity( pair<int,int>);
-  
+
 
   void PlotResults();
   int CheckNStrips();
