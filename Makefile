@@ -12,7 +12,7 @@ CXXFLAGS+= -g
 LIBS	:= $(ROOTLIBS)
 LDFLAGS := $(shell $(ROOTCONFIG) --ldflags)
 LD	:= $(shell $(ROOTCONFIG) --ld)
-OBJS	:= BeamGEMPlane.o BeamGEMTracker.o BeamGEMStrip.o
+OBJS	:= BeamGEMPlane.o BeamGEMTracker.o BeamGEMStrip.o BeamGEMProjection.o
 HDR	:= $(OBJS:.o=.h)
 
 all:  $(OBJS) beam_Dict beam

@@ -6,11 +6,11 @@
 ClassImp(BeamGEMStrip);
 
 BeamGEMStrip::BeamGEMStrip(double* d){
-  ampl_raw = 0.0;
-  ampl_fit = 0.0;
-  tau = 0.0;
-  t_start =0.0;
-  t_min = 0.0;
+  fAmpl_raw = 0.0;
+  fAmpl_fit = 0.0;
+  fTau = 0.0;
+  fT_start =0.0;
+  fT_min = 0.0;
 
   WriteSamples(d);
   Init();
@@ -24,24 +24,24 @@ void BeamGEMStrip::WriteSamples(double* d){
   // Number of sample is hardcoded here.
   // Probably we need to check size of array before Write data
   for(int i=0;i<6;i++){
-    data[i] = d[i];
+    fData[i] = d[i];
   }
 }
 
 double BeamGEMStrip::ADCSum(){
   double ret =0;
   for(int i=0;i<6;i++){
-    ret += data[i];
+    ret += fData[i];
   }
   return ret;
 }
 
 int BeamGEMStrip::FindMinimum(){
-  double min = data[0]; 
+  double min = fData[0]; 
   int t_min = 0;
   for(int i=1;i<6;i++){
-    if(data[i]<min){
-      min = data[i];
+    if(fData[i]<min){
+      min = fData[i];
       t_min = i;
     }
   }
@@ -52,15 +52,15 @@ void BeamGEMStrip::FitData(){
   // Fit the histogram for now. May want to use chi2 fit without calling a histogram
   TH1D *h_fit =  new TH1D("h_fit","histogram for fit",6,-0.5,5.5);
   for(int i=0;i<6;i++){
-    h_fit->SetBinContent(i+1,data[i]);
+    h_fit->SetBinContent(i+1,fData[i]);
   }
   TF1* fcn_sig = new TF1("fcn_sig",CRRCShaping,-10.0,10.0,4);
 
   double par[4];
   par[2] = 2.0; // An initial Guess, it means 2*25ns
-  par[1]= t_min-par[2];
+  par[1]= fT_min-par[2];
   par[3]= 0.0; // After pedestal and common mode corrections ,a zero pedestal is expected.
-  par[0]= ampl_raw*2.718;
+  par[0]= fAmpl_raw*2.718;
   fcn_sig->SetParameters(par);
   
   fcn_sig->FixParameter(3,0.0); // Test: Fix pedestal to zero
@@ -68,9 +68,10 @@ void BeamGEMStrip::FitData(){
   h_fit->Fit("QN","",0,6);
 
   fcn_sig->GetParameters(par);
-  SetFitAmplitude( par[0]);
-  SetTau( par[2]);
-  SetTStart( par[1]);
+
+  fAmpl_fit = par[0];
+  fTau = par[2];
+  fT_start = par[1];
 }
 
 void BeamGEMStrip::Process(){
@@ -79,13 +80,9 @@ void BeamGEMStrip::Process(){
 }
 
 void BeamGEMStrip::Init(){
-
-  int t = FindMinimum();
-  double sum = ADCSum();
-
-  SetTMin(t);
-  SetRawAmplitude(data[t]);
-  SetIntegral(sum);
+  fT_min = FindMinimum();
+  fAmpl_raw = fData[fT_min];
+  fIntegral = ADCSum();
 }
 
 double BeamGEMStrip::CRRCShaping(double* x, double* par){
