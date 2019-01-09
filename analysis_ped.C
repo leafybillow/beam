@@ -3,7 +3,7 @@
 
 #define N_GEM 2; // Number of GEMS
 
-Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
+Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
 
   TFile* rf_raw = TFile::Open(filename.Data());
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
@@ -65,7 +65,8 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
   tree_raw->GetEntry(1); // in order to load strip map to these array
 
   cout << "Calculating Pedestals... Be patient" << endl;
-
+  int counts = 0;
+  double total_counts = ngem*napv*nch;
   for(int igem =0; igem< ngem; igem++){
     for(int iapv=0; iapv< napv; iapv++){
       if(iapv == 0)
@@ -99,13 +100,17 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
 	  fprintf(db_file, " \\ \n");
 
 	fprintf(db_file,"%d %.2f ",(int)strip_id, ped_mean);
-
+	counts++;
+	if(counts%5==0){
+	  printf("\r Running %.1f %%  ",counts/total_counts*100);
+	}
 	hped_mean[igem][iapv]->SetBinContent(ich+1,ped_mean);
 	hped_rms[igem][iapv]->SetBinContent(ich+1,ped_rms);
       } 
     } 
+
   }
-  
+  printf("Done ! \n");
   rf_raw->Close();
 
   fclose(db_file);
@@ -117,6 +122,7 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
     }
   }
   rf_ped->Close();
+
   return 0;
 }
 
