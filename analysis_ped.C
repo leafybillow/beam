@@ -87,7 +87,7 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
 
   TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
   f_gaus->SetParameters(par);
-  h_ped->Fit("f_gaus","QN","",bincenter-2*rms,bincenter+2*rms);
+  h_ped->Fit("f_gaus","QN","",bincenter-rms,bincenter+rms);
   
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
