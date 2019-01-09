@@ -49,15 +49,29 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
   
   TString draw_text, hist_name;
   TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e4,-0.5,2e4-0.5);
+  
+  // Retrieve Channel Mapping from rootfiles ........
+  double gem1_xstrip_id[256];
+  double gem1_ystrip_id[512];
+  double gem2_xstrip_id[256];
+  double gem2_ystrip_id[512];
+  double strip_id; // shoulde be a integer, but ....
+  // Hardcoded by hand ,may need to think of a better solution to do this.
+  tree_raw->SetBranchAddress("sbs.gems.x1.strip",gem1_xstrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.y1.strip",gem1_ystrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.x2.strip",gem2_xstrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.y2.strip",gem2_ystrip_id);
+  
+  tree_raw->GetEntry(1); // in order to load strip map to these array
 
   cout << "Calculating Pedestals... Be patient" << endl;
+
   for(int igem =0; igem< ngem; igem++){
     for(int iapv=0; iapv< napv; iapv++){
-
       if(iapv == 0)
-	fprintf(db_file,"\n sbs.gems.x%d.ped =",igem+1);
+	fprintf(db_file,"\nsbs.gems.x%d.ped =",igem+1);
       if(iapv == 2)
-	fprintf(db_file,"\n sbs.gems.y%d.ped =",igem+1);
+	fprintf(db_file,"\nsbs.gems.y%d.ped =",igem+1);
       
       for(int ich=0; ich<nch;ich++){
 	draw_text = Form("sbs.gems.%s%d.adc_sum[%d]",
@@ -66,9 +80,25 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
 			 ich+base[iapv]); // stripe number
 	tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
 	PedestalFit(h_fit, ped_mean, ped_rms);
-	if(ich%16==0)
+	
+	// Get Strip id from array
+	if(igem==0){
+	  if(iapv<2)
+	    strip_id = gem1_xstrip_id[ich+128*iapv];
+	  else
+	    strip_id = gem1_ystrip_id[ich+128*(iapv-2)];
+	}
+	else if(igem==1){
+	  if(iapv<2)
+	    strip_id = gem2_xstrip_id[ich+128*iapv];
+	  else
+	    strip_id = gem2_ystrip_id[ich+128*(iapv-2)];
+	}
+	// File-Print pedestals
+	if(ich%8==0)
 	  fprintf(db_file, " \\ \n");
-	fprintf(db_file,"%.2f ", ped_mean);
+
+	fprintf(db_file,"%d %.2f ",(int)strip_id, ped_mean);
 
 	hped_mean[igem][iapv]->SetBinContent(ich+1,ped_mean);
 	hped_rms[igem][iapv]->SetBinContent(ich+1,ped_rms);
