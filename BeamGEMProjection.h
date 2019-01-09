@@ -29,6 +29,7 @@ class BeamGEMProjection: public TObject{
   inline vector< AHit> GetHits() const {return vHits;};
   inline bool GetSplitFlag() const {return isSplit;};
   inline int GetNHits() const {return nHits;};
+  inline TString GetProjName() const{return strName;};
 
   vector< pair<int,int> > SearchClusters();
   void SortHits(); 
