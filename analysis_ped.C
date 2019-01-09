@@ -12,8 +12,16 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
   TString output_filename = filename.ReplaceAll(".root","_ped.root");
   TFile* rf_ped = TFile::Open(output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
-
-
+  // Database for GEM
+  TString db_filename = "db_sbs.gems.dat_test";
+  gSystem->Exec("cp db_sbs.gems.dat_noped "+db_filename);
+  FILE *db_file = fopen(db_filename.Data(),"a");
+  gSystem->Exec(Form("ln -sf %s db_sbs.gems.dat",db_filename.Data()));
+  
+  // Insert a comment line 
+  fprintf(db_file,"\n");
+  fprintf(db_file,"# Pedestal Database");
+  
   // * Pre-Analysis GEM : Get Pedestal From Gaussian Fit
   const int ngem = N_GEM;
   const int napv = 6;  // number of apvs for each GEM
@@ -42,9 +50,15 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
   TString draw_text, hist_name;
   TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e4,-0.5,2e4-0.5);
 
-  cout << "Calculating Pedestals... Be Patient" << endl;
+  cout << "Calculating Pedestals... Be patient" << endl;
   for(int igem =0; igem< ngem; igem++){
     for(int iapv=0; iapv< napv; iapv++){
+
+      if(iapv == 0)
+	fprintf(db_file,"\n sbs.gems.x%d.ped =",igem+1);
+      if(iapv == 2)
+	fprintf(db_file,"\n sbs.gems.y%d.ped =",igem+1);
+      
       for(int ich=0; ich<nch;ich++){
 	draw_text = Form("sbs.gems.%s%d.adc_sum[%d]",
 			 apv_tag[iapv].Data(),
@@ -52,7 +66,10 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
 			 ich+base[iapv]); // stripe number
 	tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
 	PedestalFit(h_fit, ped_mean, ped_rms);
-	
+	if(ich%16==0)
+	  fprintf(db_file, " \\ \n");
+	fprintf(db_file,"%.2f ", ped_mean);
+
 	hped_mean[igem][iapv]->SetBinContent(ich+1,ped_mean);
 	hped_rms[igem][iapv]->SetBinContent(ich+1,ped_rms);
       } 
@@ -61,6 +78,7 @@ Int_t analysis_ped(TString filename="test.root", Bool_t isDebug = 0){
   
   rf_raw->Close();
 
+  fclose(db_file);
   //Write  objects  
   for(int igem =0; igem<ngem;igem++){
     for(int iapv=0; iapv<napv; iapv++){
