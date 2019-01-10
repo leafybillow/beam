@@ -10,14 +10,14 @@ BeamGEMStrip::BeamGEMStrip(double* d){
   fAmpl_fit = 0.0;
   fTau = 0.0;
   fT_start =0.0;
-  fT_min = 0.0;
+  fT_max = 0.0;
+  fADCsum= 0.0; 
 
   WriteSamples(d);
   Init();
 }
 
 BeamGEMStrip::~BeamGEMStrip(){
-
 }
 
 void BeamGEMStrip::WriteSamples(double* d){
@@ -28,7 +28,7 @@ void BeamGEMStrip::WriteSamples(double* d){
   }
 }
 
-double BeamGEMStrip::ADCSum(){
+double BeamGEMStrip::SumADC(){
   double ret =0;
   for(int i=0;i<6;i++){
     ret += fData[i];
@@ -36,21 +36,20 @@ double BeamGEMStrip::ADCSum(){
   return ret;
 }
 
-int BeamGEMStrip::FindMinimum(){
-  double min = fData[0]; 
-  int t_min = 0;
+int BeamGEMStrip::FindMaximum(){
+  double max = fData[0]; 
+  int t_max = 0;
   for(int i=1;i<6;i++){
-    if(fData[i]<min){
-      min = fData[i];
-      t_min = i;
+    if(fData[i]>max){
+      max = fData[i];
+      t_max = i;
     }
   }
-  return t_min;
+  return t_max;
 }
 
 void BeamGEMStrip::FitData(){
   // Fit the histogram for now. May want to use chi2 fit without calling a histogram
-  TH1D *h_fit =  new TH1D("h_fit","histogram for fit",6,-0.5,5.5);
   for(int i=0;i<6;i++){
     h_fit->SetBinContent(i+1,fData[i]);
   }
@@ -58,14 +57,13 @@ void BeamGEMStrip::FitData(){
 
   double par[4];
   par[2] = 2.0; // An initial Guess, it means 2*25ns
-  par[1]= fT_min-par[2];
+  par[1]= fT_max-par[2];
   par[3]= 0.0; // After pedestal and common mode corrections ,a zero pedestal is expected.
   par[0]= fAmpl_raw*2.718;
   fcn_sig->SetParameters(par);
+  fcn_sig->FixParameter(3,0.0); // FIXME: force pedestal to be zero for now
   
-  fcn_sig->FixParameter(3,0.0); // Test: Fix pedestal to zero
-  
-  h_fit->Fit("QN","",0,6);
+  h_fit->Fit("fcn_sig","QN","",0,6);
 
   fcn_sig->GetParameters(par);
 
@@ -76,17 +74,16 @@ void BeamGEMStrip::FitData(){
 
 void BeamGEMStrip::Process(){
   FitData();
-  //PlotFitResult();
 }
 
 void BeamGEMStrip::Init(){
-  fT_min = FindMinimum();
-  fAmpl_raw = fData[fT_min];
-  fIntegral = ADCSum();
+  fT_max = FindMaximum();
+  fAmpl_raw = fData[fT_max];
+  fADCsum = SumADC();
+  h_fit =  new TH1D("","histogram for fit",6,-0.5,5.5);
 }
 
 double BeamGEMStrip::CRRCShaping(double* x, double* par){
-
   double t = x[0];
   double V_0 = par[0];
   double t_start = par[1];
