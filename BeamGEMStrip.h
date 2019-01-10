@@ -19,6 +19,18 @@ class BeamGEMStrip: public TObject{
   int id_strip;  // strip id: the physical position in readout plane
 
   TH1D *h_fit;
+
+  // Called by Init
+  void WriteSamples(double* d);
+  int FindMaximum();
+  double SumADC();
+
+  // Called by Process
+
+  static double CRRCShaping(double*, double*);
+  void FitData();
+  void Init();
+
  public: 
   BeamGEMStrip(double* d, int id);
   ~BeamGEMStrip();
@@ -31,19 +43,10 @@ class BeamGEMStrip: public TObject{
   inline double GetTau() const { return fTau;};
   inline double GetTStart() const { return fT_start;};
   inline double GetFitAmplitude() const { return fAmpl_fit;};
-
-  // Called by Init
-  void WriteSamples(double* d);
-  int FindMaximum();
-  double SumADC();
-
-  // Called by Process
-
-  static double CRRCShaping(double*, double*);
-  void FitData();
+  
+  double GetAmplitude();
 
   // Called by Users
-  void Init();
   void Process();
   void PlotFitResult(int ievt,int igem, int iapv, int ich);
 
