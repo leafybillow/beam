@@ -114,17 +114,24 @@ double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
 void BeamGEMProjection::SortHits(){
   // Sort Hits by Charge Amplitude.
   // We do this to prepare for correlation matching in Plane level 
-  // Bubble sort is used here
+  // insert sort is used here
   AHit aHit_buff;
   for(int iHit=1; iHit<nHits; iHit++){
-    for(int jHit=0; jHit<iHit; jHit++){
-      if(vHits[jHit].fCharge > vHits[iHit].fCharge){
-	aHit_buff = vHits[iHit];
-	vHits[iHit] = vHits[jHit];
-	vHits[jHit] = aHit_buff;
-      }
+    aHit_buff = vHits[iHit];
+
+    int jHit = iHit-1;
+    while(jHit>=0 && vHits[jHit].fCharge > aHit_buff.fCharge){
+      vHits[jHit+1]=vHits[jHit];
+      jHit = jHit-1;
     }
+    vHits[jHit+1]=aHit_buff;
   }
+  // idiot check
+  // for(int iHit=0; iHit<nHits-1; iHit++){
+  //   if( vHits[iHit].fCharge > vHits[iHit+1].fCharge)
+  //     std::cout << "Sorting went wrong! " << std::endl;
+  // }
+
 }
 
 int BeamGEMProjection::CheckNStrips(){
