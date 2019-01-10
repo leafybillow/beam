@@ -17,7 +17,7 @@ class BeamGEMProjection: public TObject{
  private:
   vector <BeamGEMStrip* > vBGStrips; // Not Used for Now
   vector< AHit > vHits;
-  int nStrips; // should be either 256 or 512 for slac beam test
+  int nStrips; // should be either 256 or 512 for GEMs in slac beam test
   int nHits;
   bool isSplit; // is any splitting peak ?
   TString strProjName; // e.g. x1, x2 , y1, y2
@@ -44,14 +44,14 @@ class BeamGEMProjection: public TObject{
   inline bool GetSplitFlag() const {return isSplit;};
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
-  
+  inline int GetNStrips() const {return nStrips;};
   void Init();
 
   // Called by User
   int Process();
   void AddStrip(BeamGEMStrip* );
   int PostProcess();
-  void PlotResults();
+  void PlotResults(TString, int);
 
   ClassDef(BeamGEMProjection,0);
 };

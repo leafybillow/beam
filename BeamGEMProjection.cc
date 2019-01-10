@@ -1,7 +1,7 @@
 #include "BeamGEMProjection.h"
 #include "BeamGEMStrip.h"
 #include <iostream>
-
+#include "TCanvas.h"
 ClassImp(BeamGEMProjection);
 
 
@@ -51,7 +51,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
 
   vector< pair<int,int> > vecRange;
   double bin_content;
-  int mpl_cut = 3;
+  int mpl_cut = 2;
   bool isLock = 0;
   double threshold =0; // Zero suppression has been done in the main script
   
@@ -60,11 +60,11 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
     bin_content = h_proj->GetBinContent(iStrip+1);
     if(bin_content>threshold && isLock==0){
       isLock = 1;
-      low=bin_content;
+      low= iStrip+1;
     }
     if((bin_content<=threshold||iStrip==nStrips) && isLock==1){
       isLock = 0;
-      up = bin_content;
+      up = iStrip+1;
       if((up-low+1)>mpl_cut){
 	vecRange.push_back( make_pair(low,up) );
       }
@@ -148,4 +148,15 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
   int strip_id = bgGEMStrip->GetStripID();
   h_proj->SetBinContent(strip_id,ampl);
 
+}
+
+void BeamGEMProjection::PlotResults(TString runName, int ievt){
+
+  TCanvas *c1 = new TCanvas("",Form("Projection %s",strProjName.Data()),800,400);
+  c1->cd();
+  h_proj->Draw();
+  h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
+  h_proj->GetXaxis()->SetTitle("Position(mm)");
+  
+  c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
 }
