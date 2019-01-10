@@ -17,10 +17,10 @@ BeamGEMProjection::~BeamGEMProjection(){
 
 void BeamGEMProjection::Init(){
   double pitch = 0.4 ; // 400 um = 0.4 mm
-  double length = pitch*nStrips;
+  double length = pitch*nStrips; // (nStrips-1)+0.5+0.5 = nStrips :)
 
   h_proj = new TH1D("",Form("Projection on %s",strProjName.Data()),
-		    nStrips,-length/2.0-pitch/2.0,length/2.0-pitch/2.0);
+		    nStrips,-length/2.0,length/2.0);
 }
 
 int BeamGEMProjection::Process(){
@@ -151,7 +151,6 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
-
   TCanvas *c1 = new TCanvas("",Form("Projection %s",strProjName.Data()),800,400);
   c1->cd();
   h_proj->Draw();
