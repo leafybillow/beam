@@ -95,7 +95,7 @@ double BeamGEMStrip::CRRCShaping(double* x, double* par){
   if(t<t_start)
     fcn_val =offset;
   else
-    fcn_val = -V_0*(t-t_start)/tau*TMath::Exp(-(t-t_start)/tau) + offset;
+    fcn_val = V_0*(t-t_start)/tau*TMath::Exp(-(t-t_start)/tau) + offset;
 
   return fcn_val;
 }
