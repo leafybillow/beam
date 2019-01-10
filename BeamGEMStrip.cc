@@ -5,13 +5,14 @@
 
 ClassImp(BeamGEMStrip);
 
-BeamGEMStrip::BeamGEMStrip(double* d){
+BeamGEMStrip::BeamGEMStrip(double* d, int id){
   fAmpl_raw = 0.0;
   fAmpl_fit = 0.0;
   fTau = 0.0;
   fT_start =0.0;
   fT_max = 0.0;
   fADCsum= 0.0; 
+  id_strip= id ;
 
   WriteSamples(d);
   Init();

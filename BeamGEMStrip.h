@@ -15,14 +15,19 @@ class BeamGEMStrip: public TObject{
   double fT_start; // starting time, unit: *25ns
   double Chi2; // FIXME: to-do: chi-square 
 
+  // Identification
+  int id_strip;  // strip id: the physical position in readout plane
+
   TH1D *h_fit;
  public: 
-  BeamGEMStrip(double* d);
+  BeamGEMStrip(double* d, int id);
   ~BeamGEMStrip();
+
+  inline int GetStripID() const {return id_strip;};
   inline double GetRawAmplitude() const { return fAmpl_raw;};
   inline double GetADCsum() const { return fADCsum;};
   inline int GetTMax() const { return fT_max;};
-
+  
   inline double GetTau() const { return fTau;};
   inline double GetTStart() const { return fT_start;};
   inline double GetFitAmplitude() const { return fAmpl_fit;};
