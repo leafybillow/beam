@@ -1,13 +1,14 @@
 #include "BeamGEMProjection.h"
+#include "BeamGEMStrip.h"
 #include <iostream>
+
 ClassImp(BeamGEMProjection);
 
 
-BeamGEMProjection::BeamGEMProjection(TH1D* h, double *rms, TString Name)
-  :vHits(NULL),nStrips(-1),nHits(-1),isSplit(0){
-  h_proj =h;
-  fRMS = rms;
-  strName = Name;
+BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
+  :vBGStrips(NULL),vHits(NULL),nHits(-1),isSplit(0){
+  nStrips = nch;
+  strProjName = Name;
   Init();
 }
 BeamGEMProjection::~BeamGEMProjection(){
@@ -15,7 +16,11 @@ BeamGEMProjection::~BeamGEMProjection(){
 }
 
 void BeamGEMProjection::Init(){
-  nStrips = h_proj->GetNbinsX();
+  double pitch = 0.4 ; // 400 um = 0.4 mm
+  double length = pitch*nStrips;
+
+  h_proj = new TH1D("",Form("Projection on %s",strProjName.Data()),
+		    nStrips,-length/2.0-pitch/2.0,length/2.0-pitch/2.0);
 }
 
 int BeamGEMProjection::Process(){
@@ -48,16 +53,16 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   double bin_content;
   int mpl_cut = 3;
   bool isLock = 0;
+  double threshold =0; // Zero suppression has been done in the main script
   
-  // bool isAccept = 0;
   int low=0, up=0;
   for(int iStrip=0; iStrip<nStrips; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip+1);
-    if(bin_content>0 && isLock==0){
+    if(bin_content>threshold && isLock==0){
       isLock = 1;
       low=bin_content;
     }
-    if((bin_content<=0||iStrip==nStrips) && isLock==1){
+    if((bin_content<=threshold||iStrip==nStrips) && isLock==1){
       isLock = 0;
       up = bin_content;
       if((up-low+1)>mpl_cut){
@@ -123,12 +128,24 @@ void BeamGEMProjection::SortHits(){
 }
 
 int BeamGEMProjection::CheckNStrips(){
-  if((strName=="x" && nStrips == 256) || (strName=="y" &&nStrips==512)){
-    return 0;
-  }
-  else{
-    std::cout << "Error: Number of Strips mismatches the Projection belonged to" << std::endl;
-    return 1;
-  }
+  //FIXME
+  // char cProjName[] = strProjName[0];
+  // if((strcmp(cProjName,"x")== 0 && nStrips == 256)
+  //    ||(strcmp(cProjName,"y")==0 && nStrips==512)){
+
+  //   return 0;
+  // }
+  // else{
+  //   std::cout << "Error: Number of Strips mismatches the Projection belonged to" << std::endl;
+  //   return 1;
+  // }
+  return 0;
+}
+
+void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
+
+  double ampl = bgGEMStrip->GetAmplitude();
+  int strip_id = bgGEMStrip->GetStripID();
+  h_proj->SetBinContent(strip_id,ampl);
 
 }

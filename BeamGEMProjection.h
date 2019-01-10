@@ -11,26 +11,18 @@ struct AHit{
   int fMpl; // Multiplicity, unit: # of strips, a integer
 };
 
+class BeamGEMStrip;
+
 class BeamGEMProjection: public TObject{
  private:
+  vector <BeamGEMStrip* > vBGStrips; // Not Used for Now
   vector< AHit > vHits;
   int nStrips; // should be either 256 or 512 for slac beam test
   int nHits;
   bool isSplit; // is any splitting peak ?
-  TString strName; // either x or y
+  TString strProjName; // e.g. x1, x2 , y1, y2
 
- public:
-  BeamGEMProjection(TH1D* h, double *rms, TString name);
-  ~BeamGEMProjection();
-
-  double* fRMS; // commond mode corrected RMS array.
-  TH1D* h_proj;
-  
-  inline vector< AHit> GetHits() const {return vHits;};
-  inline bool GetSplitFlag() const {return isSplit;};
-  inline int GetNHits() const {return nHits;};
-  inline TString GetProjName() const{return strName;};
-
+  // Called by Process
   vector< pair<int,int> > SearchClusters();
   void SortHits(); 
   double ProcessCentroid(pair<int,int>);
@@ -38,16 +30,28 @@ class BeamGEMProjection: public TObject{
   double ProcessResolution(pair<int,int>);
   int ProcessMultiplicity( pair<int,int>);
 
-
-  void PlotResults();
   int CheckNStrips();
-
-  void FitCluster(int nPeaks);
   double CheckSplit();
 
+  void FitCluster(int nPeaks);
+  TH1D* h_proj;
+
+ public:
+  BeamGEMProjection(TString projName, Int_t nch);
+  ~BeamGEMProjection();
+  
+  inline vector< AHit> GetHits() const {return vHits;};
+  inline bool GetSplitFlag() const {return isSplit;};
+  inline int GetNHits() const {return nHits;};
+  inline TString GetProjName() const{return strProjName;};
+  
   void Init();
+
+  // Called by User
   int Process();
+  void AddStrip(BeamGEMStrip* );
   int PostProcess();
+  void PlotResults();
 
   ClassDef(BeamGEMProjection,0);
 };
