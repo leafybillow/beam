@@ -131,7 +131,6 @@ void BeamGEMProjection::SortHits(){
   //   if( vHits[iHit].fCharge > vHits[iHit+1].fCharge)
   //     std::cout << "Sorting went wrong! " << std::endl;
   // }
-
 }
 
 int BeamGEMProjection::CheckNStrips(){
@@ -158,7 +157,9 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
-  TCanvas *c1 = new TCanvas("",Form("Projection %s",strProjName.Data()),800,400);
+  TCanvas *c1 = new TCanvas("",
+			    Form("Projection %s , found %d Cluster(s) ",strProjName.Data(),nHits),
+			    800,400);
   c1->cd();
   h_proj->Draw();
   h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
