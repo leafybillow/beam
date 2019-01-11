@@ -17,6 +17,7 @@ class BeamGEMPlane: public TObject{
 
   double z_position; // position in z; Not used now
   int nHits;  //Number of hits found
+  TString strPlaneName;
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
   //Process functions
@@ -30,7 +31,7 @@ class BeamGEMPlane: public TObject{
   int CheckHits();  
 
  public:
-  BeamGEMPlane();
+  BeamGEMPlane(TString);
   ~BeamGEMPlane();
   
   inline vector<double> GetPositionX() const {return fPos_x;};

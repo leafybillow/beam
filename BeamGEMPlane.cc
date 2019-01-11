@@ -4,9 +4,10 @@
 
 ClassImp(BeamGEMPlane);
 
-BeamGEMPlane::BeamGEMPlane()
+BeamGEMPlane::BeamGEMPlane(TString name)
   :fPos_x(NULL),fPos_y(NULL),fCharge_x(NULL),fCharge_y(NULL),fCorelation(NULL),nHits(-1),bgProjX(NULL),bgProjY(NULL){
 
+  strPlaneName = name;
 }
 BeamGEMPlane::~BeamGEMPlane(){}
 
@@ -79,7 +80,10 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   c2->cd(1);
   bgProjX->GetTH1D()->Draw();
   
-  c1->SaveAs(Form("%s-evt%d-Plane.pdf",runName.Data(),ievt));
+  c1->SaveAs(Form("%s-%s-evt-%d.pdf",
+		  runName.Data(),
+		  strPlaneName.Data(),
+		  ievt));
   
   delete c1;
 }
