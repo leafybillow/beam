@@ -81,7 +81,7 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
-  Int_t nentries = 10;//tree_raw->GetEntries();
+  Int_t nentries = 50;//tree_raw->GetEntries();
   for(Int_t ievt=0;ievt<nentries;ievt++){
     tree_raw->GetEntry(ievt);
 
@@ -104,7 +104,7 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
 								 (Int_t)Proj[iProj].nChannel);
 	for(Int_t ich=0; ich<nChannel;ich++){
 	  
-	  if( (Proj[iProj].adc_sum[ich] -6*Proj[iProj].common_mode[ich]) > 200){  //ZeroSuppression FIXME: change it to RMS
+	  //	  if( (Proj[iProj].adc_sum[ich] -6*Proj[iProj].common_mode[ich]) > 200){  //ZeroSuppression FIXME: change it to RMS
 	    Double_t arADC[6];  	  // *** Transpose ADC Samples
 	    for(Int_t iadc=0 ;iadc<nadc;iadc++){
 	      arADC[iadc] = Proj[iProj].adc[iadc][ich] - Proj[iProj].common_mode[ich];
@@ -113,16 +113,22 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
 	    BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
 	    bgStrip->Process();
 	    bgProjection[iProj]->AddStrip(bgStrip);
-	  } // if this channel survives Zero Suppression
+	    //	  } // if this channel survives Zero Suppression
 	} // End channel loop
 	bgProjection[iProj]->Process();
 	// bgProjection[iProj]->PlotResults(runName,ievt);
       } // End number of channel check
     } // End Projection Loop
-    BeamGEMPlane *bgPlane1 = new BeamGEMPlane();
+
+    BeamGEMPlane *bgPlane1 = new BeamGEMPlane("gem1");
+    BeamGEMPlane *bgPlane2 = new BeamGEMPlane("gem2");
     bgPlane1->AddProjectionX(bgProjection[0]);
     bgPlane1->AddProjectionY(bgProjection[1]);
+    bgPlane2->AddProjectionX(bgProjection[2]);
+    bgPlane2->AddProjectionY(bgProjection[3]);
+
     bgPlane1->PlotResults(runName,ievt);
+    bgPlane2->PlotResults(runName,ievt);
     //** Fill this entry
     //tree_rec->Fill();
   } // End Event loop
