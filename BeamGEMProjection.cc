@@ -157,13 +157,13 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
-  TCanvas *c1 = new TCanvas("",
-			    Form("Projection %s , found %d Cluster(s) ",strProjName.Data(),nHits),
-			    800,400);
+  TCanvas *c1 = new TCanvas("","c1", 800,400);
   c1->cd();
   h_proj->Draw();
   h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
   h_proj->GetXaxis()->SetTitle("Position(mm)");
-  
+  h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
   c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
+
+  delete c1;
 }
