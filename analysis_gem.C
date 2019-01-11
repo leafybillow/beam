@@ -1,8 +1,5 @@
-#define N_GEM 2; // Number of GEMS
+
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
-#define PITCH 400.0;   // pitch width, unit: um
-#define CUT_MPL 1;     // cut on multiplicity, reject single wire hits (most likely noises or cross-talks)
-#define CUT_COR 1.0;     // cut on correlation, based on correlation studies
 
 Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
   
@@ -27,9 +24,6 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
   tree_rec->Branch("position_y",&vCharge_y);
   //__________________________________________________________________________________
   // GEM Configuration Parameters
-  const Int_t ngem = N_GEM;
-  const Int_t napv = 6;  // number of apvs for each GEM
-  const Int_t nch = 128; // number of channel on each APV cards
 
   Int_t nProj = 4; // number of projections, 2 GEM *(X+Y) = 4
   Int_t nadc = 6; // number of adc samples
@@ -50,6 +44,7 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
     // identification for projection
     Int_t id_Proj; // starts from 0 to 3; {"x1","y1","x2","y2"}
   };
+  Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
   struct StcProjection Proj[4];
 
   for(Int_t iProj=0;iProj<nProj;iProj++){
@@ -104,16 +99,18 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
 								 (Int_t)Proj[iProj].nChannel);
 	for(Int_t ich=0; ich<nChannel;ich++){
 	  
-	  //	  if( (Proj[iProj].adc_sum[ich] -6*Proj[iProj].common_mode[ich]) > 200){  //ZeroSuppression FIXME: change it to RMS
+
 	    Double_t arADC[6];  	  // *** Transpose ADC Samples
 	    for(Int_t iadc=0 ;iadc<nadc;iadc++){
 	      arADC[iadc] = Proj[iProj].adc[iadc][ich] - Proj[iProj].common_mode[ich];
 	    } // End sample loop
 	    Int_t myStripID = (Int_t)Proj[iProj].id_strip[ich];
 	    BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
-	    bgStrip->Process();
-	    bgProjection[iProj]->AddStrip(bgStrip);
-	    //	  } // if this channel survives Zero Suppression
+	    // Effectively zero suppression
+	    if(bgStrip.GetRawAmplitude()>THRESHOLD*rms[iProj][ich]){ 
+	      bgStrip->Process();
+	      bgProjection[iProj]->AddStrip(bgStrip);
+	    }
 	} // End channel loop
 	bgProjection[iProj]->Process();
 	// bgProjection[iProj]->PlotResults(runName,ievt);

@@ -93,7 +93,7 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
   Int_t bin_max = h_ped->GetMaximumBin();
   Double_t bincenter = h_ped->GetBinCenter(bin_max);
   Double_t bin_content_max = h_ped->GetBinContent(bin_max);
-  Double_t rms = 100.0; // An initial guess
+  Double_t rms = 50.0; // An initial guess
 
   Double_t par[3]; 
   par[0] = bin_content_max;
