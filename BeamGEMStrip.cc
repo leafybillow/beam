@@ -103,6 +103,6 @@ double BeamGEMStrip::CRRCShaping(double* x, double* par){
 
 double BeamGEMStrip::GetAmplitude(){
   // FIXME
-  return GetRawAmplitude();
+  return GetADCsum();
 
 }
