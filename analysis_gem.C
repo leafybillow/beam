@@ -1,4 +1,4 @@
-
+#include "analysis_rms.h"
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
 
 Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
@@ -107,7 +107,7 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
 	    Int_t myStripID = (Int_t)Proj[iProj].id_strip[ich];
 	    BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
 	    // Effectively zero suppression
-	    if(bgStrip.GetRawAmplitude()>THRESHOLD*rms[iProj][ich]){ 
+	    if(bgStrip->GetRawAmplitude()>THRESHOLD*rms[iProj][ich]){ 
 	      bgStrip->Process();
 	      bgProjection[iProj]->AddStrip(bgStrip);
 	    }
