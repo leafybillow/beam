@@ -6,3 +6,4 @@
 *.o
 *.so
 *Dict*
+analysis_rms.h
