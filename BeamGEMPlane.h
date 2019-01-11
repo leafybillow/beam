@@ -2,7 +2,7 @@
 #include <RooInt.h>
 #include <vector>
 #include <TH1.h>
-
+#include <TCanvas.h>
 
 
 using namespace std;
@@ -16,8 +16,18 @@ class BeamGEMPlane: public TObject{
   vector<double> fCorelation; // (x-y)/(x+y)
 
   int nHits;  //Number of hits found
-  BeamGEMProjection* gProjX;
-  BeamGEMProjection* gProjY;
+  BeamGEMProjection* bgProjX;
+  BeamGEMProjection* bgProjY;
+  //Process functions
+  void MatchHits();
+  double EvalCorrelation(double charge_x, double charge_y);
+  
+  //Init Check
+  int CheckPlaneName();
+  
+  // Post-check
+  int CheckHits();  
+
  public:
   BeamGEMPlane(BeamGEMProjection* projX , BeamGEMProjection* projY );
   ~BeamGEMPlane();
@@ -29,18 +39,9 @@ class BeamGEMPlane: public TObject{
   inline vector<double> GetCorrelation() const {return fCorelation;};
   inline int GetNHits() const {return nHits;};
 
-  //Process functions
-  void MatchHits();
-  double EvalCorrelation(double charge_x, double charge_y);
-  
-  //Init Check
-  int CheckPlaneName();
-  
-  // Post-check
-  int CheckHits();  
 
   void Init();
   int Process();
-
+  void PlotResults(TString, int);
   ClassDef(BeamGEMPlane,0);
 };

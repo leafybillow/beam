@@ -5,7 +5,7 @@
 ClassImp(BeamGEMPlane);
 
 BeamGEMPlane::BeamGEMPlane(BeamGEMProjection* projX, BeamGEMProjection* projY)
-  :fPos_x(NULL),fPos_y(NULL),fCharge_x(NULL),fCharge_y(NULL),fCorelation(NULL),nHits(-1),gProjX(projX),gProjY(projY){
+  :fPos_x(NULL),fPos_y(NULL),fCharge_x(NULL),fCharge_y(NULL),fCorelation(NULL),nHits(-1),bgProjX(projX),bgProjY(projY){
 
   Init();
 }
@@ -47,8 +47,8 @@ int BeamGEMPlane::CheckHits(){
 }
 
 int BeamGEMPlane::CheckPlaneName(){
-  TString strName_Y = gProjY->GetProjName();
-  TString strName_X = gProjX->GetProjName();
+  TString strName_Y = bgProjY->GetProjName();
+  TString strName_X = bgProjX->GetProjName();
   if(strName_Y=="y" && strName_X=="x")
     return 0;
   else{
@@ -60,13 +60,31 @@ int BeamGEMPlane::CheckPlaneName(){
   }
 }
 
-void MatchHits(){
+void BeamGEMPlane::MatchHits(){
   
 }
 
-double EvalCorrelation(double x, double y){
+double BeamGEMPlane::EvalCorrelation(double x, double y){
 
   double ret;
   ret = (x-y)/(x+y);
   return ret;
+}
+
+void BeamGEMPlane::PlotResults(TString runName, int ievt){
+
+  TCanvas *c1 = new TCanvas("c1","c1",800,800);
+  c1->Divide(1,2);
+
+  c1->cd(1);
+  bgProjY->GetTH1D()->Draw();
+
+  TVirtualPad *c2 = c1->cd(2);
+  c2->Divide(2,1);
+  c2->cd(1);
+  bgProjX->GetTH1D()->Draw();
+  
+  c1->SaveAs(Form("%s-evt%d-Plane.pdf",runName.Data(),ievt));
+  
+  delete c1;
 }
