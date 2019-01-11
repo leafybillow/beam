@@ -74,7 +74,7 @@ void BeamGEMStrip::FitData(){
 }
 
 void BeamGEMStrip::Process(){
-  FitData();
+  //  FitData();
 }
 
 void BeamGEMStrip::Init(){
