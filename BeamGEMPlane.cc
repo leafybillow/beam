@@ -4,19 +4,14 @@
 
 ClassImp(BeamGEMPlane);
 
-BeamGEMPlane::BeamGEMPlane(BeamGEMProjection* projX, BeamGEMProjection* projY)
-  :fPos_x(NULL),fPos_y(NULL),fCharge_x(NULL),fCharge_y(NULL),fCorelation(NULL),nHits(-1),bgProjX(projX),bgProjY(projY){
+BeamGEMPlane::BeamGEMPlane()
+  :fPos_x(NULL),fPos_y(NULL),fCharge_x(NULL),fCharge_y(NULL),fCorelation(NULL),nHits(-1),bgProjX(NULL),bgProjY(NULL){
 
-  Init();
 }
 BeamGEMPlane::~BeamGEMPlane(){}
 
-void BeamGEMPlane::Init(){
-
-}
-
 int BeamGEMPlane::Process(){
-  int status = CheckPlaneName();
+  int status = CheckProjections();
   if(status==0){
 
     MatchHits();
@@ -46,7 +41,7 @@ int BeamGEMPlane::CheckHits(){
     return 0;
 }
 
-int BeamGEMPlane::CheckPlaneName(){
+int BeamGEMPlane::CheckProjections(){
   TString strName_Y = bgProjY->GetProjName();
   TString strName_X = bgProjX->GetProjName();
   if(strName_Y=="y" && strName_X=="x")
@@ -87,4 +82,12 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   c1->SaveAs(Form("%s-evt%d-Plane.pdf",runName.Data(),ievt));
   
   delete c1;
+}
+
+void BeamGEMPlane::AddProjectionX(BeamGEMProjection* bgProj){
+  bgProjX = bgProj;
+}
+
+void BeamGEMPlane::AddProjectionY(BeamGEMProjection* bgProj){
+  bgProjY = bgProj;
 }

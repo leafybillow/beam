@@ -15,6 +15,7 @@ class BeamGEMPlane: public TObject{
   vector<double> fCharge_y;
   vector<double> fCorelation; // (x-y)/(x+y)
 
+  double z_position; // position in z; Not used now
   int nHits;  //Number of hits found
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
@@ -23,13 +24,13 @@ class BeamGEMPlane: public TObject{
   double EvalCorrelation(double charge_x, double charge_y);
   
   //Init Check
-  int CheckPlaneName();
+  int CheckProjections();
   
   // Post-check
   int CheckHits();  
 
  public:
-  BeamGEMPlane(BeamGEMProjection* projX , BeamGEMProjection* projY );
+  BeamGEMPlane();
   ~BeamGEMPlane();
   
   inline vector<double> GetPositionX() const {return fPos_x;};
@@ -39,9 +40,12 @@ class BeamGEMPlane: public TObject{
   inline vector<double> GetCorrelation() const {return fCorelation;};
   inline int GetNHits() const {return nHits;};
 
+  // Called by Users
+  void AddProjectionX( BeamGEMProjection* );
+  void AddProjectionY( BeamGEMProjection* );
 
-  void Init();
   int Process();
   void PlotResults(TString, int);
+
   ClassDef(BeamGEMPlane,0);
 };
