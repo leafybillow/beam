@@ -44,6 +44,8 @@ int BeamGEMProjection::Process(){
   nHits = nClusters; // FIXME: just for now, we will check splitting 
   SortHits();
 
+  h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
+
   return 0;
 }
 
@@ -162,7 +164,7 @@ void BeamGEMProjection::PlotResults(TString runName, int ievt){
   h_proj->Draw();
   h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
   h_proj->GetXaxis()->SetTitle("Position(mm)");
-  h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
+
   c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
 
   delete c1;

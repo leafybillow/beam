@@ -45,6 +45,7 @@ class BeamGEMProjection: public TObject{
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};
+  inline TH1D* GetTH1D() const {return h_proj;};
   void Init();
 
   // Called by User
