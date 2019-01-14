@@ -31,13 +31,31 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   for(int iproj=0; iproj<nproj;iproj++){
     int nbins =sizeArray[iproj];
     hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
-				Form("Pedestal Mean,  %s",strProj[iproj].Data()),
+				Form("Pedestal Mean vs strip,  %s",strProj[iproj].Data()),
 				nbins,-0.5,nbins-0.5);
     hped_rms[iproj] = new TH1D(Form("hped_rms_%d",iproj),
-			       Form("Pedestal RMS,  %s",strProj[iproj].Data()),
+			       Form("Pedestal RMS vs strip,  %s",strProj[iproj].Data()),
 			       nbins,-0.5,nbins-0.5);
   }
 
+
+  // Retrieve Channel Mapping from rootfiles ........
+  double gem1_xstrip_id[256];
+  double gem1_ystrip_id[512];
+  double gem2_xstrip_id[256];
+  double gem2_ystrip_id[512];
+  double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
+			  gem2_xstrip_id, gem2_ystrip_id }; 
+  // strip_id type should be an integer, but ....it was output as a float
+  // Hardcoded by hand ,may need to think of a better solution to do this.
+  // Anyway, I need a pointer to load strip map
+  tree_raw->SetBranchAddress("sbs.gems.x1.strip",gem1_xstrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.y1.strip",gem1_ystrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.x2.strip",gem2_xstrip_id);
+  tree_raw->SetBranchAddress("sbs.gems.y2.strip",gem2_ystrip_id);
+  
+  tree_raw->GetEntry(1); // in order to load strip map to these array
+  // Caution: And this needs to be fixed if ZeroSuppression is on in SBS-offline
   
   Double_t ped_mean; //averaged by 6
   Double_t ped_rms; // averaged by sqrt(6)
@@ -64,9 +82,10 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
       fprintf(header_file,"%.2f",ped_rms);
       if(ich!=nch-1)
 	fprintf(header_file,", ");
-
-      hped_mean[iproj]->SetBinContent(ich+1,ped_mean);
-      hped_rms[iproj]->SetBinContent(ich+1,ped_rms);
+      
+      int strip = strip_id[iproj][ich];
+      hped_mean[iproj]->SetBinContent(strip+1,ped_mean);
+      hped_rms[iproj]->SetBinContent(strip+1,ped_rms);
     }
     
     fprintf(header_file,"};\n");

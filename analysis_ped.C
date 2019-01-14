@@ -23,27 +23,23 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   fprintf(db_file,"# Pedestal Database");
   
   // * Pre-Analysis GEM : Get Pedestal From Gaussian Fit
-  const int ngem = N_GEM;
-  const int napv = 6;  // number of apvs for each GEM
-  const int nch = 128; // number of channel on each APV cards
-  TH1D* hped_mean[ngem][napv];
-  TH1D* hped_rms[ngem][napv];
 
-  for(int igem=0; igem<ngem;igem++){
-    for(int iapv=0; iapv<napv;iapv++){
-      hped_mean[igem][iapv] = new TH1D(Form("hped_mean_%d_%d",igem,iapv),
-				       Form("Pedestal Mean, GEM %d, APV %d",igem, iapv),
-				       128,-0.5,127.5);
-      hped_rms[igem][iapv] = new TH1D(Form("hped_rms_%d_%d",igem,iapv),
-				      Form("Pedestal RMS, GEM %d, APV %d",igem, iapv),
-				      128,-0.5,127.5);
-    }
+  const int nproj = 4;
+  TH1D* hped_mean[nproj];
+  TH1D* hped_rms[nproj];
+
+  TString strProj[nproj]={"x1","y1","x2","y2"};
+  Int_t sizeArray[nproj]={256, 512, 256, 512}; 
+
+  for(int iproj=0; iproj<nproj;iproj++){
+      hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
+				  Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
+				  sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
+      hped_rms[iproj] = new TH1D(Form("hped_rms_%d",iproj),
+				 Form("Pedestal RMS vs strip, projection %s",strProj[iproj].Data()),
+				 sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
   }
 
-  TString apv_tag[napv] = {"x","x",
-			   "y","y","y","y"};
-  Int_t base[napv] = {0, 128, 
-		      0, 128 , 256, 384};
   Double_t ped_mean; //averaged by 6
   Double_t ped_rms; // averaged by sqrt(6)
   
@@ -55,72 +51,59 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   double gem1_ystrip_id[512];
   double gem2_xstrip_id[256];
   double gem2_ystrip_id[512];
-  double strip_id; // shoulde be a integer, but ....
+  double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
+			  gem2_xstrip_id, gem2_ystrip_id }; 
+  // strip_id type should be an integer, but ....it was output as a float
   // Hardcoded by hand ,may need to think of a better solution to do this.
+  // Anyway, I need a pointer to load strip map
   tree_raw->SetBranchAddress("sbs.gems.x1.strip",gem1_xstrip_id);
   tree_raw->SetBranchAddress("sbs.gems.y1.strip",gem1_ystrip_id);
   tree_raw->SetBranchAddress("sbs.gems.x2.strip",gem2_xstrip_id);
   tree_raw->SetBranchAddress("sbs.gems.y2.strip",gem2_ystrip_id);
   
   tree_raw->GetEntry(1); // in order to load strip map to these array
+  // Caution: And this needs to be fixed if ZeroSuppression is on in SBS-offline
 
   cout << "Calculating Pedestals... Be patient" << endl;
   int counts = 0;
-  double total_counts = ngem*napv*nch;
-  for(int igem =0; igem< ngem; igem++){
-    for(int iapv=0; iapv< napv; iapv++){
-      if(iapv == 0)
-	fprintf(db_file,"\nsbs.gems.x%d.ped =",igem+1);
-      if(iapv == 2)
-	fprintf(db_file,"\nsbs.gems.y%d.ped =",igem+1);
-      
-      for(int ich=0; ich<nch;ich++){
-	draw_text = Form("sbs.gems.%s%d.adc_sum[%d]",
-			 apv_tag[iapv].Data(),
-			 igem+1,
-			 ich+base[iapv]); // stripe number
-	tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
-	PedestalFit(h_fit, ped_mean, ped_rms);
+  for(int iproj =0; iproj< nproj; iproj++){
+
+    fprintf(db_file,"\nsbs.gems.%s.ped =",strProj[iproj].Data());
+    int nch = sizeArray[iproj];
+
+    for(int ich=0; ich<nch;ich++){
+      draw_text = Form("sbs.gems.%s.adc_sum[%d]",
+		       strProj[iproj].Data(),
+		       ich); // channel number
+      tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
+      PedestalFit(h_fit, ped_mean, ped_rms);
 	
-	// Get Strip id from array
-	if(igem==0){
-	  if(iapv<2)
-	    strip_id = gem1_xstrip_id[ich+128*iapv];
-	  else
-	    strip_id = gem1_ystrip_id[ich+128*(iapv-2)];
-	}
-	else if(igem==1){
-	  if(iapv<2)
-	    strip_id = gem2_xstrip_id[ich+128*iapv];
-	  else
-	    strip_id = gem2_ystrip_id[ich+128*(iapv-2)];
-	}
-	// File-Print pedestals
-	if(ich%8==0)
-	  fprintf(db_file, " \\ \n");
+      // Get Strip id from array
+      int strip = strip_id[iproj][ich]; 
+      // File-Print pedestals
+      if(ich%8==0)
+	fprintf(db_file, " \\ \n");
 
-	fprintf(db_file,"%d %.2f ",(int)strip_id, ped_mean);
-	counts++;
-	if(counts%5==0){
-	  printf("\r Running %.1f %%  ",counts/total_counts*100);
-	}
-	hped_mean[igem][iapv]->SetBinContent(ich+1,ped_mean);
-	hped_rms[igem][iapv]->SetBinContent(ich+1,ped_rms);
-      } 
+      fprintf(db_file,"%d %.2f ",(int)strip, ped_mean);
+      // counts++;
+      // if(counts%5==0){
+      // 	printf("\r Running %.1f %%  ",counts/total_counts*100);
+      // }
+      hped_mean[iproj]->SetBinContent(strip+1,ped_mean);
+      hped_rms[iproj]->SetBinContent(strip+1,ped_rms);
     } 
-
   }
   printf("Done ! \n");
   rf_raw->Close();
 
   fclose(db_file);
   //Write  objects  
-  for(int igem =0; igem<ngem;igem++){
-    for(int iapv=0; iapv<napv; iapv++){
-      hped_mean[igem][iapv]->Write();
-      hped_rms[igem][iapv]->Write();
-    }
+  
+  for(int iproj=0; iproj<nproj; iproj++){
+    hped_mean[iproj]->Write();
+    hped_rms[iproj]->Write();
   }
+
   rf_ped->Close();
 
   return 0;
