@@ -44,7 +44,7 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   Double_t ped_rms; // averaged by sqrt(6)
   
   TString draw_text, hist_name;
-  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e4,-0.5,2e4-0.5);
+  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e3,-0.5,1e4-0.5);
   
   // Retrieve Channel Mapping from rootfiles ........
   double gem1_xstrip_id[256];
@@ -52,7 +52,7 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   double gem2_xstrip_id[256];
   double gem2_ystrip_id[512];
   double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
-			  gem2_xstrip_id, gem2_ystrip_id }; 
+			      gem2_xstrip_id, gem2_ystrip_id }; 
   // strip_id type should be an integer, but ....it was output as a float
   // Hardcoded by hand ,may need to think of a better solution to do this.
   // Anyway, I need a pointer to load strip map
@@ -64,7 +64,7 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   tree_raw->GetEntry(1); // in order to load strip map to these array
   // Caution: And this needs to be fixed if ZeroSuppression is on in SBS-offline
 
-  cout << "Calculating Pedestals... Be patient" << endl;
+  cout << "Calculating Pedestals... Be patient/Stay cool" << endl;
   int counts = 0;
   for(int iproj =0; iproj< nproj; iproj++){
 
@@ -72,14 +72,16 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
     int nch = sizeArray[iproj];
 
     for(int ich=0; ich<nch;ich++){
+
+      // Get Strip id from array
+      int strip = strip_id[iproj][ich]; 
+
       draw_text = Form("sbs.gems.%s.adc_sum[%d]",
 		       strProj[iproj].Data(),
 		       ich); // channel number
       tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
-      PedestalFit(h_fit, ped_mean, ped_rms);
+      PedestalFit(h_fit, ped_mean, ped_rms,iproj,strip);
 	
-      // Get Strip id from array
-      int strip = strip_id[iproj][ich]; 
       // File-Print pedestals
       if(ich%8==0)
 	fprintf(db_file, " \\ \n");
@@ -110,7 +112,7 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
 }
 
 // User Define Functions
-void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
+void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma, int iproj, int strip){
 
   Int_t bin_max = h_ped->GetMaximumBin();
   Double_t bincenter = h_ped->GetBinCenter(bin_max);
@@ -124,9 +126,20 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
 
   TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
   f_gaus->SetParameters(par);
-  h_ped->Fit("f_gaus","QN","",bincenter-rms,bincenter+rms);
+  h_ped->Fit("f_gaus","QNR","",bincenter-2*rms,bincenter+2*rms);
+
+  mean = f_gaus->GetParameter(1);
+  sigma  = f_gaus->GetParameter(2);
   
+  h_ped->Fit("f_gaus","QNR","",mean-2*sigma,mean+2*sigma);
+
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
 
+  // TCanvas *c1  = new TCanvas("c1","c1",800,800);
+  // c1->cd();
+  // h_ped->Draw();
+  // f_gaus->Draw("same");
+  // c1->SaveAs(Form("plots/FitPed-%d-%d.png",iproj,strip));
+  // delete c1;
  }

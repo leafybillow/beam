@@ -45,7 +45,7 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   double gem2_xstrip_id[256];
   double gem2_ystrip_id[512];
   double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
-			  gem2_xstrip_id, gem2_ystrip_id }; 
+			      gem2_xstrip_id, gem2_ystrip_id }; 
   // strip_id type should be an integer, but ....it was output as a float
   // Hardcoded by hand ,may need to think of a better solution to do this.
   // Anyway, I need a pointer to load strip map
@@ -121,8 +121,12 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
 
   TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
   f_gaus->SetParameters(par);
-  h_ped->Fit("f_gaus","QN","",bincenter-rms,bincenter+rms);
-  
+  h_ped->Fit("f_gaus","QNR","",bincenter-rms,bincenter+rms);
+
+  mean = f_gaus->GetParameter(1);
+  sigma  = f_gaus->GetParameter(2);
+  h_ped->Fit("f_gaus","QNR","",mean-2*sigma,mean+2*sigma);
+
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
 }
