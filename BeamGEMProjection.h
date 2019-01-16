@@ -8,7 +8,7 @@ struct AHit{
   double fPosition; // Hit position in this coordinate, unit:mm
   double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
   double fRes;  // spatial resolution of this hits, unit um
-  int fMpl; // Multiplicity, unit: # of strips, a integer
+  int fWidth; // A single hit width, unit: # of strips, a integer
 };
 
 class BeamGEMStrip;
@@ -28,7 +28,7 @@ class BeamGEMProjection: public TObject{
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   double ProcessResolution(pair<int,int>);
-  int ProcessMultiplicity( pair<int,int>);
+  int ProcessWidth( pair<int,int>);
 
   int CheckNStrips();
   double CheckSplit();
