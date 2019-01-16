@@ -25,29 +25,36 @@ void BeamGEMProjection::Init(){
 
 int BeamGEMProjection::Process(){
 
-  if(CheckNStrips()==1){ // if it fails to match nstrip
+  if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;
-  }
 
-  vector< pair<int,int> > vecRange=SearchClusters();
-  AHit aHit;
-  int nClusters = vecRange.size();
-  for(int iCluster=0; iCluster <nClusters;iCluster++){
+  else{
 
-    aHit.fCharge = ProcessCharge( vecRange[iCluster]);
-    aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
-    aHit.fWidth = ProcessWidth(vecRange[iCluster]);
-    aHit.fRes = ProcessResolution(vecRange[iCluster]);
+    if(h_proj->GetEntries()>0){
+      vector< pair<int,int> > vecRange=SearchClusters();
+      AHit aHit;
+      int nClusters = vecRange.size();
+      for(int iCluster=0; iCluster <nClusters;iCluster++){
 
-    vHits.push_back(aHit);
-  }
+	aHit.fCharge = ProcessCharge( vecRange[iCluster]);
+	aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
+	aHit.fWidth = ProcessWidth(vecRange[iCluster]);
+	aHit.fRes = ProcessResolution(vecRange[iCluster]);
 
-  nHits = nClusters; // FIXME: just for now, we will check splitting 
-  SortHits();
+	vHits.push_back(aHit);
+      }
 
-  h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
+      nHits = nClusters; // FIXME: just for now, we will check splitting 
+      SortHits();
+    } // Pass if h_proj has non-zero entries
+    else 
+      nHits = 0;
 
-  return 0;
+    h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
+
+    return 0;
+  } // Pass CheckNStrips()
+
 }
 
 vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
