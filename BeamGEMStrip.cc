@@ -51,6 +51,7 @@ int BeamGEMStrip::FindMaximum(){
 
 void BeamGEMStrip::FitData(){
   // Fit the histogram for now. May want to use chi2 fit without calling a histogram
+  h_fit =  new TH1D("","histogram for fit",6,-0.5,5.5);
   for(int i=0;i<6;i++){
     h_fit->SetBinContent(i+1,fData[i]);
   }
@@ -71,6 +72,8 @@ void BeamGEMStrip::FitData(){
   fAmpl_fit = par[0];
   fTau = par[2];
   fT_start = par[1];
+
+  delete h_fit;
 }
 
 void BeamGEMStrip::Process(){
@@ -78,10 +81,11 @@ void BeamGEMStrip::Process(){
 }
 
 void BeamGEMStrip::Init(){
+
   fT_max = FindMaximum();
   fAmpl_raw = fData[fT_max];
   fADCsum = SumADC();
-  h_fit =  new TH1D("","histogram for fit",6,-0.5,5.5);
+
 }
 
 double BeamGEMStrip::CRRCShaping(double* x, double* par){
