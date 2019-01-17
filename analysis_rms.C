@@ -8,8 +8,12 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   cout << "ROOTFile " << filename << " is opened. " << endl;
 
-  TString output_filename = filename.ReplaceAll(".root","_rms.root");
-  TFile* rf_rms = TFile::Open(output_filename,"RECREATE");
+  Ssiz_t first_t = filename.Last('/') +1; // if a slash is not there, return 0.
+  Ssiz_t last_t = filename.Last('.');
+  Int_t length_t = last_t - first_t;
+  TString prefix_t = filename(first_t,length_t);
+  TString output_filename = prefix_t + "_rms.root";
+  TFile* rf_rms = TFile::Open("rootfiles/"+output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
 
   // Header for GEM
@@ -125,7 +129,7 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
 
   mean = f_gaus->GetParameter(1);
   sigma  = f_gaus->GetParameter(2);
-  h_ped->Fit("f_gaus","QNR","",mean-2*sigma,mean+2*sigma);
+  h_ped->Fit("f_gaus","QNR","",mean-sigma,mean+sigma);
 
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
