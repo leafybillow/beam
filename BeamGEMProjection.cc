@@ -50,7 +50,7 @@ int BeamGEMProjection::Process(){
     else 
       nHits = 0;
 
-    h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) ",strProjName.Data(),nHits));
+    h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found ",strProjName.Data(),nHits));
 
     return 0;
   } // Pass CheckNStrips()
@@ -178,4 +178,90 @@ void BeamGEMProjection::PlotResults(TString runName, int ievt){
   c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
 
   delete c1;
+}
+
+
+int BeamGEMProjection::TestCrossTalk(int iHit1, int iHit2){
+
+  // int strip[4] = {32,88,118,127} ;  unit  number strips
+  double target[4] = {12.8, 35.2, 47.2, 50.8}; // target = strip*0.4 unit: mm
+  
+  double position1 = vHits[iHit1].fPosition;
+  double width = vHits[iHit1].fWidth * 0.5; // just need half the width
+  double position2 = vHits[iHit2].fPosition;
+
+  int myapv1  = position1 /50.8;
+  int myapv2  = position2 /50.8; // returns an integer representing apv id
+
+  double separation = fabs(position2-position1);
+  bool isCrossTalk = 0; 
+  int i=0;
+
+  if( myapv1 != myapv2 ){
+    // APV ids mismatch with each other : 
+    // two positions are crossing the border of 2 APVs , so it is not cross-talk
+    return 0;
+  }
+  else{
+    
+    while(isCrossTalk==0 && i!=4 ){
+
+      if( fabs(separation-target[i])<=width ) 
+	isCrossTalk = 1;
+      
+      i++;
+    }
+
+    if(isCrossTalk)
+      return 1;
+    else
+      return 0;
+  }
+
+}
+
+void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
+
+  // 1. Remove cross talk or noisy clusters from vHits array
+  // 2. Update Histogram title, indicating number of hits identified
+  
+  int nMask = vHitsMask.size();
+  int sumMask = 0;
+
+  if(nMask!= nHits){
+    std::cerr << "Error : " 
+	      << __FILE__ << ":"
+	      << __FUNCTION__ <<  "()::"
+	      << " Mismatched number of masks and hits"
+	      << std::endl;
+  }
+  else{
+
+    std::vector< AHit>::iterator iHits = vHits.begin();
+    for(int iMask=0; iMask<nMask; iMask++){
+      
+      if(vHitsMask[iMask]==1){ // A Good Hit
+	sumMask +=1;
+	iHits++;
+      }
+      else
+	iHits = vHits.erase(iHits);
+    }
+    
+  }
+  
+  if(sumMask == vHits.size())
+    nHits = vHits.size();
+  else{
+    std::cerr << "Error : " 
+	      << __FILE__ << ":"
+	      << __FUNCTION__ <<  "()::"
+	      << " Mismatched masks sum  and  number of passed  hits"
+	      << std::endl;
+  }
+  
+  TString title = h_proj->GetTitle();
+  TString append = Form(", %d hit(s) confirmed", nHits);
+  h_proj->SetTitle(title+append);
+
 }

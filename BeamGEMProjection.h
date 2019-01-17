@@ -47,12 +47,14 @@ class BeamGEMProjection: public TObject{
   inline int GetNStrips() const {return nStrips;};
   inline TH1D* GetTH1D() const {return h_proj;};
   void Init();
-
   // Called by User
   int Process();
   void AddStrip(BeamGEMStrip* );
-  int PostProcess();
   void PlotResults(TString, int);
+
+  int PostProcess();
+  int TestCrossTalk(int iHit1, int iHit2); // 1 : suspected as a cross talk pair; if 0: it is not 
+  void UpdateHits( vector<int> vHitsMask ); // called by BeamGEMPlane::Process(), during post-check on cross talk
 
   ClassDef(BeamGEMProjection,0);
 };
