@@ -10,7 +10,7 @@
 
 // Replay script for SLAC beam test, 2018
 
-void replay(){
+void replay(int run_num){
   //  Steering script for Hall A analyzer demo
 
     gSystem->Load("libsbs.so");
@@ -37,10 +37,7 @@ void replay(){
   
   // Define the run(s) that we want to analyze.
   // We just set up one, but this could be many.
-  int argc=0;
-  std::cout<<"enter file name: "<<std::endl;
-  cin>>argc;
-  THaRun* run = new THaRun(Form("/export/home/taoye/analyzer/raw-data/run_%d.dat",argc));
+  THaRun* run = new THaRun(Form("/export/home/taoye/analyzer/raw-data/run_%d.dat",run_num));
   run->SetLastEvent(-1);
   run->SetDataRequired(0);
   run->SetDate(TDatime());
@@ -49,7 +46,7 @@ void replay(){
   
   // Define the analysis parameters
   analyzer->SetEvent( event );
-  analyzer->SetOutFile(Form("/export/home/taoye/analyzer/rootfiles/run_%d.root",argc));
+  analyzer->SetOutFile(Form("/export/home/taoye/analyzer/rootfiles/run_%d.root",run_num));
   // File to record cuts accounting information
   analyzer->SetSummaryFile("summary_example.log"); // optional
   //analyzer->SetCompressionLevel(0); // turn off compression
