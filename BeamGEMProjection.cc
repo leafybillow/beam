@@ -190,8 +190,8 @@ int BeamGEMProjection::TestCrossTalk(int iHit1, int iHit2){
   double width = vHits[iHit1].fWidth * 0.5; // just need half the width
   double position2 = vHits[iHit2].fPosition;
 
-  int myapv1  = position1 /50.8;
-  int myapv2  = position2 /50.8; // returns an integer representing apv id
+  int myapv1  = ceil(position1 /50.8);
+  int myapv2  = ceil(position2 /50.8); // returns an integer representing apv id
 
   double separation = fabs(position2-position1);
   bool isCrossTalk = 0; 
