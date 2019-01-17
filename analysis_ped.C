@@ -9,12 +9,17 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   cout << "ROOTFile " << filename << " is opened. " << endl;
 
-  TString output_filename = filename.ReplaceAll(".root","_ped.root");
-  TFile* rf_ped = TFile::Open(output_filename,"RECREATE");
+  Ssiz_t first_t = filename.Last('/') +1; // if a slash is not there, return 0.
+  Ssiz_t last_t = filename.Last('.');
+  Int_t length_t = last_t - first_t;
+  TString prefix_t = filename(first_t,length_t);
+
+  TString output_filename = prefix_t + "_ped.root";
+  TFile* rf_ped = TFile::Open("rootfiles/"+output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
   // Database for GEM
-  TString db_filename = "db_sbs.gems.dat_test";
-  gSystem->Exec("cp db_sbs.gems.dat_noped "+db_filename);
+  TString db_filename = "DBfiles/db_sbs.gems.dat_" + prefix_t;
+  gSystem->Exec("cp DBfiles/db_sbs.gems.dat_noped "+db_filename);
   FILE *db_file = fopen(db_filename.Data(),"a");
   gSystem->Exec(Form("ln -sf %s db_sbs.gems.dat",db_filename.Data()));
   
