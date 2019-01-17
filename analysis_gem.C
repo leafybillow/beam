@@ -13,7 +13,7 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
   Int_t length_t = last_t - first_t;
   TString prefix_t = filename(first_t,length_t);
   //__________________________________________________________________________________
-  TString output_filename = prefix_t + "_analyzed.root";
+  TString output_filename = prefix_t + "_gem.root";
   TFile* rf_rec = TFile::Open(output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
   // Create Trees 
@@ -103,12 +103,12 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
     } // End Projection Loop
 
     BeamGEMPlane *bgPlane1 = new BeamGEMPlane("gem1");
-    BeamGEMPlane *bgPlane2 = new BeamGEMPlane("gem2");
     bgPlane1->AddProjectionX(bgProjection[0]);
     bgPlane1->AddProjectionY(bgProjection[1]);
-    bgPlane2->AddProjectionX(bgProjection[2]);
-    bgPlane2->AddProjectionY(bgProjection[3]);
+    // bgPlane2->AddProjectionX(bgProjection[2]);
+    // bgPlane2->AddProjectionY(bgProjection[3]);
     bgPlane1->Process();
+    // bgPlane2->Process(); 
 
     vCharge_x = bgPlane1->GetChargeX();
     vCharge_y = bgPlane1->GetChargeY();
@@ -119,10 +119,10 @@ Int_t analysis_gem(TString filename="test.root", Bool_t isDebug = 0){
     vWidth_y = bgPlane1->GetWidthY();
 
     nHits = bgPlane1->GetNHits();
-    // if(nHits>0 && fabs(vCharge_x[0]-vCharge_y[0]-1200)>3000){
-    //   bgPlane1->PlotResults(prefix_t,ievt);
-    //   bgPlane2->PlotResults(prefix_t,ievt);
-    // }
+    if(nHits==1){
+      bgPlane1->PlotResults(prefix_t,ievt);
+
+    }
     //** Fill this entry
     tree_rec->Fill();
   } // End Event loop
