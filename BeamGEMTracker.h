@@ -1,8 +1,10 @@
 #include <TObject.h>
 #include <RooInt.h>
 #include <vector>
+
 using namespace std;
 class BeamGEMPlane;
+class BeamGEMProjection;
 class BeamGEMTracker: public TObject{
  private:
   vector<double> fSlope_zx;
@@ -11,9 +13,11 @@ class BeamGEMTracker: public TObject{
   vector<double> fPhi;
   vector<double> fDet_x;  //Extrapolated hits positions on detector plane
   vector<double> fDet_y;
+
+  vector<BeamGEMPlane* > vPlanes;
   int nTracks;
  public:
-  BeamGEMTracker(BeamGEMPlane*, BeamGEMPlane*);
+  BeamGEMTracker();
   ~BeamGEMTracker();
 
   /* void SetPositionX(vector<double> pos); */
@@ -24,5 +28,8 @@ class BeamGEMTracker: public TObject{
   
   void Init();
   void Process();
+  void PlotResults(TString, int);
+  void AddPlane(BeamGEMPlane* );
+
   ClassDef(BeamGEMTracker,0);
 };

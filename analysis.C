@@ -8,13 +8,20 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   TFile* rf_raw = TFile::Open(filename.Data());
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   cout << "Raw ROOTFile " << filename << " is opened. " << endl;
+
   Ssiz_t first_t = filename.Last('/') +1; // if a slash is not there, return 0.
   Ssiz_t last_t = filename.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = filename(first_t,length_t);
-  TString output_filename = prefix_t + "_analyzed.root";
-  TFile* rf_rec = TFile::Open("rootfiles/"+output_filename,"RECREATE");
-  cout << "ROOTFile " << output_filename << " is recreated. " << endl;
+
+  if(isDebug!=1){
+    TString output_filename = prefix_t + "_analyzed.root";
+    TFile* rf_rec = TFile::Open("rootfiles/"+output_filename,"RECREATE");
+    cout << "ROOTFile " << output_filename << " is recreated. " << endl;
+  }
+  else{
+    cout << "Debug mode is on " <<endl;
+  }
   //__________________________________________________________________________________
   // New Reconstructed Tree
   TTree* tree_rec = new TTree("Rec","Rec"); 
@@ -23,10 +30,12 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   vector <double> vCharge_x1, vCharge_y1;
   vector <double> vPosition_x1, vPosition_y1;
   vector <double> vWidth_x1, vWidth_y1;
+  vector <int> vSplit_x1, vSplit_y1;
 
   vector <double> vCharge_x2, vCharge_y2;
   vector <double> vPosition_x2, vPosition_y2;
   vector <double> vWidth_x2, vWidth_y2;
+  vector <int> vSplit_x2, vSplit_y2;
 
   Int_t nHits_1, nHits_2;
 
@@ -45,6 +54,8 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   tree_rec->Branch("gem1.position_y",&vPosition_y1);
   tree_rec->Branch("gem1.width_x",&vWidth_x1);
   tree_rec->Branch("gem1.width_y",&vWidth_y1);
+  tree_rec->Branch("gem1.split_x",&vSplit_x1);
+  tree_rec->Branch("gem1.split_y",&vSplit_y1);
   tree_rec->Branch("gem1.nHits",&nHits_1);
 
   tree_rec->Branch("gem2.charge_x",&vCharge_x2);
@@ -53,6 +64,8 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   tree_rec->Branch("gem2.position_y",&vPosition_y2);
   tree_rec->Branch("gem2.width_x",&vWidth_x2);
   tree_rec->Branch("gem2.width_y",&vWidth_y2);
+  tree_rec->Branch("gem2.split_x",&vSplit_x2);
+  tree_rec->Branch("gem2.split_y",&vSplit_y2);
   tree_rec->Branch("gem2.nHits",&nHits_2);
 
   //__________________________________________________________________________________
@@ -139,16 +152,20 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
       } // End channel loop
       bgProjection[iProj]->Process();
     } // End Projection Loop
-
-    BeamGEMPlane *bgPlane1 = new BeamGEMPlane("gem1");
-    BeamGEMPlane *bgPlane2 = new BeamGEMPlane("gem2");
+    BeamGEMTracker* bgTracker = new BeamGEMTracker();
+    BeamGEMPlane* bgPlane1 = new BeamGEMPlane("gem1");
+    BeamGEMPlane* bgPlane2 = new BeamGEMPlane("gem2");
     bgPlane1->AddProjectionX(bgProjection[0]);
     bgPlane1->AddProjectionY(bgProjection[1]);
     bgPlane2->AddProjectionX(bgProjection[2]);
     bgPlane2->AddProjectionY(bgProjection[3]);
+
     bgPlane1->Process();
     bgPlane2->Process();
 
+    bgTracker->AddPlane(bgPlane1);
+    bgTracker->AddPlane(bgPlane2);
+    // FIXME: a better way to do this
     vCharge_x1 = bgPlane1->GetChargeX();
     vCharge_y1 = bgPlane1->GetChargeY();
     vPosition_x1 = bgPlane1->GetPositionX();
@@ -156,7 +173,8 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 
     vWidth_x1 = bgPlane1->GetWidthX();
     vWidth_y1 = bgPlane1->GetWidthY();
-
+    vSplit_x1 = bgPlane1->GetSplitX();
+    vSplit_y1 = bgPlane1->GetSplitY();
     nHits_1 = bgPlane1->GetNHits();
 
     vCharge_x2 = bgPlane2->GetChargeX();
@@ -166,21 +184,30 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 
     vWidth_x2 = bgPlane2->GetWidthX();
     vWidth_y2 = bgPlane2->GetWidthY();
-
+    vSplit_x2 = bgPlane2->GetSplitX();
+    vSplit_y2 = bgPlane2->GetSplitY();
     nHits_2 = bgPlane2->GetNHits();
 
-    // if(nHits_1==1 && qdc.us_hi>1500){
-    //   bgPlane1->PlotResults(prefix_t,ievt);
-    // }
+    
+    if (isDebug!=1){
+      tree_rec->Fill();
+    }
 
-    tree_rec->Fill();
+    if(isDebug){
+      if(qdc.us_hi > 1600 && nHits_1==1 && nHits_2==1){
+	bgTracker->PlotResults(prefix_t,ievt);
+      }
+    }
+
   } // End Event loop
 
   //__________________________________________________________________________________
   
   rf_raw->Close();
-  tree_rec->Write();
-  rf_rec->Close();
+  if(isDebug!=1){
+    tree_rec->Write();
+    rf_rec->Close();
+  }
 
   return 0;
 }
