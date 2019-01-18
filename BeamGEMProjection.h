@@ -9,6 +9,7 @@ struct AHit{
   double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
   double fRes;  // spatial resolution of this hits, unit um
   int fWidth; // A single hit width, unit: # of strips, a integer
+  int splitLevel;  // number of hits resolved from this cluster
 };
 
 class BeamGEMStrip;
@@ -19,7 +20,6 @@ class BeamGEMProjection: public TObject{
   vector< AHit > vHits;
   int nStrips; // should be either 256 or 512 for GEMs in slac beam test
   int nHits;
-  bool isSplit; // is any splitting peak ?
   TString strProjName; // e.g. x1, x2 , y1, y2
 
   // Called by Process
@@ -29,9 +29,10 @@ class BeamGEMProjection: public TObject{
   double ProcessCharge(pair<int,int>); 
   double ProcessResolution(pair<int,int>);
   int ProcessWidth( pair<int,int>);
+  int ProcessSplitCheck(pair<int,int>);
 
   int CheckNStrips();
-  double CheckSplit();
+
 
   void FitCluster(int nPeaks);
   TH1D* h_proj;
@@ -41,7 +42,6 @@ class BeamGEMProjection: public TObject{
   ~BeamGEMProjection();
   
   inline vector< AHit> GetHits() const {return vHits;};
-  inline bool GetSplitFlag() const {return isSplit;};
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};

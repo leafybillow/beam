@@ -4,9 +4,10 @@
 #include "TCanvas.h"
 ClassImp(BeamGEMProjection);
 #define WIDTH_CUT 1 ; // Rejecting single active channel 
-
+#define MAX_WIDTH 3 ; // Threshold to examine oversize cluster
+#define SPLIT_FRAC 0.1 ;
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
-  :vBGStrips(NULL),vHits(NULL),nHits(-1),isSplit(0){
+  :vBGStrips(NULL),vHits(NULL),nHits(-1){
   nStrips = nch;
   strProjName = Name;
   Init();
@@ -27,7 +28,6 @@ int BeamGEMProjection::Process(){
 
   if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;
-
   else{
 
     if(h_proj->GetEntries()>0){
@@ -40,11 +40,13 @@ int BeamGEMProjection::Process(){
 	aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
 	aHit.fWidth = ProcessWidth(vecRange[iCluster]);
 	aHit.fRes = ProcessResolution(vecRange[iCluster]);
+	aHit.splitLevel= ProcessSplitCheck(vecRange[iCluster]);
 
 	vHits.push_back(aHit);
       }
 
-      nHits = nClusters; // FIXME: just for now, we will check splitting 
+      // FIXME:  we will split overlapping clusters  
+      nHits = nClusters; 
       SortHits();
     } // Pass if h_proj has non-zero entries
     else 
@@ -264,4 +266,54 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
   TString append = Form(", %d hit(s) confirmed", nHits);
   h_proj->SetTitle(title+append);
 
+}
+
+int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
+  
+  // Adapted from Jlab-TreeSearch::GEMPlane::Decode()
+  int iter = prRange.first;
+  double max_val = h_proj->GetBinContent(iter);
+  int end = prRange.second;
+  int width = prRange.second - prRange.first;
+
+  int kMaxSize = MAX_WIDTH;
+  double frac = SPLIT_FRAC;
+  double frac_up = 1.0 + frac;
+  double frac_down = 1.0 -frac;
+
+  double cur_val ; //current bin content  
+  double min_val;
+  int min_counts = 0; 
+  enum EStatus {kFindMax=1,kFindMin};
+  EStatus eStatus = kFindMax;
+  if( width >kMaxSize ){
+    while(iter!=end){
+      iter++;
+      cur_val = h_proj->GetBinContent(iter);
+      switch(eStatus){
+      case kFindMax:
+	if(cur_val>max_val)
+	  max_val = cur_val;
+	else if( cur_val < max_val*frac_down){
+	  eStatus = kFindMin;
+	  min_val = cur_val;
+	  continue;
+	}
+	break;
+      case kFindMin:
+	if(cur_val<min_val)
+	  min_val = cur_val;
+	else if (cur_val> min_val*frac_up){
+	  eStatus = kFindMax;
+	  max_val = cur_val;
+	  min_counts ++;
+	  continue;
+	}
+	break;
+      } // End of switch
+    } // End of iter while-loop
+    return min_counts; // Number of vallies found
+  } // End of ... I know
+  else
+    return 0;  // No splitting found 
 }
