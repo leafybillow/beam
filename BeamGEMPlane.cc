@@ -146,73 +146,73 @@ int BeamGEMPlane::Reconstruct_v0(){
     vHitsMask_y.push_back(1); 
     return 1;      // accept only one hit
   }
-  // else if( nHits_y ==1 && nHits_x ==2) {
-  //   if( bgProjX->TestCrossTalk(0,1) ){
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_x.push_back(1);
-  //     vHitsMask_x.push_back(0);
-  //     return 1 ; 
-  //   }
-  //   else
-  //     return -1 ; // Not ready to resolve this type of hits yet
-  // }
-  // else if(nHits_x ==1 && nHits_y ==2 ){  
-  //   if( bgProjY->TestCrossTalk(0,1) ){
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_x.push_back(1);
-  //     vHitsMask_y.push_back(0);
-  //     return 1 ; 
-  //   }
-  //   else
-  //     return -1 ;
-  // }
-  // else if ( nHits_y ==2 && nHits_x == 2){
-  //   if( bgProjY->TestCrossTalk(0,1) &&
-  // 	bgProjX->TestCrossTalk(0,1) ){
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_x.push_back(1);
-  //     vHitsMask_y.push_back(0);
-  //     vHitsMask_x.push_back(0);
-  //     return 1 ; 
-  //   }
-  //   else if( bgProjY->TestCrossTalk(0,1) ||
-  // 	     bgProjX->TestCrossTalk(0,1) ){
+  else if( nHits_y ==1 && nHits_x ==2) {
+    if( bgProjX->TestCrossTalk(0,1) ){
+      vHitsMask_y.push_back(1); 
+      vHitsMask_x.push_back(1);
+      vHitsMask_x.push_back(0);
+      return 1 ; 
+    }
+    else
+      return -1 ; // Not ready to resolve this type of hits yet
+  }
+  else if(nHits_x ==1 && nHits_y ==2 ){  
+    if( bgProjY->TestCrossTalk(0,1) ){
+      vHitsMask_y.push_back(1); 
+      vHitsMask_x.push_back(1);
+      vHitsMask_y.push_back(0);
+      return 1 ; 
+    }
+    else
+      return -1 ;
+  }
+  else if ( nHits_y ==2 && nHits_x == 2){
+    if( bgProjY->TestCrossTalk(0,1) &&
+  	bgProjX->TestCrossTalk(0,1) ){
+      vHitsMask_y.push_back(1); 
+      vHitsMask_x.push_back(1);
+      vHitsMask_y.push_back(0);
+      vHitsMask_x.push_back(0);
+      return 1 ; 
+    }
+    else if( bgProjY->TestCrossTalk(0,1) ||
+  	     bgProjX->TestCrossTalk(0,1) ){
 
-  //     return -1 ;
-  //   }
-  //   else {
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_x.push_back(1);
-  //     vHitsMask_y.push_back(1);
-  //     vHitsMask_x.push_back(1);
-  //     return 2; // accept two hits
-  //   }
-  // }
-  // else if (nHits_x>2 && nHits_y>2){
-  //   bool isCrossTalk_x = bgProjX->TestCrossTalk(0,1);
-  //   bool isCrossTalk_y = bgProjY->TestCrossTalk(0,1);
-  //   if( isCrossTalk_y==0 && isCrossTalk_x ==0 ){ // just test the first two
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_y.push_back(1); 
-  //     vHitsMask_x.push_back(1);
-  //     vHitsMask_x.push_back(1);
-  //     int ix = 2; 
-  //     int iy = 2;
-  //     while(ix<nHits_x){
-  // 	vHitsMask_x.push_back(0);
-  // 	ix++;
-  //     }
-  //     while(iy<nHits_y){
-  // 	vHitsMask_y.push_back(0);
-  // 	iy++;
-  //     }
+      return -1 ;
+    }
+    else {
+      vHitsMask_y.push_back(1); 
+      vHitsMask_x.push_back(1);
+      vHitsMask_y.push_back(1);
+      vHitsMask_x.push_back(1);
+      return 2; // accept two hits
+    }
+  }
+  else if (nHits_x>2 && nHits_y>2){
+    bool isCrossTalk_x = bgProjX->TestCrossTalk(0,1);
+    bool isCrossTalk_y = bgProjY->TestCrossTalk(0,1);
+    if( isCrossTalk_y==0 && isCrossTalk_x ==0 ){ // just test the first two
+      vHitsMask_y.push_back(1); 
+      vHitsMask_y.push_back(1); 
+      vHitsMask_x.push_back(1);
+      vHitsMask_x.push_back(1);
+      int ix = 2; 
+      int iy = 2;
+      while(ix<nHits_x){
+  	vHitsMask_x.push_back(0);
+  	ix++;
+      }
+      while(iy<nHits_y){
+  	vHitsMask_y.push_back(0);
+  	iy++;
+      }
 
-  //     return 2 ;
-  //   }
-  //   else {
-  //     return -1 ;
-  //   }
-  // }
+      return 2 ;
+    }
+    else {
+      return -1 ;
+    }
+  }
   else 
     return -1;  // ignore this events
 }
