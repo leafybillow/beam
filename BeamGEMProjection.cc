@@ -4,8 +4,8 @@
 #include "TCanvas.h"
 ClassImp(BeamGEMProjection);
 #define WIDTH_CUT 1 ; // Rejecting single active channel 
-#define MAX_WIDTH 3 ; // Threshold to examine oversize cluster
-#define SPLIT_FRAC 0.1 ;
+#define MAX_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
+#define SPLIT_FRAC 0.1 ; 
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
   :vBGStrips(NULL),vHits(NULL),nHits(-1){
   nStrips = nch;
@@ -35,28 +35,33 @@ int BeamGEMProjection::Process(){
       AHit aHit;
       int nClusters = vecRange.size();
       for(int iCluster=0; iCluster <nClusters;iCluster++){
+	  aHit.fCharge = ProcessCharge( vecRange[iCluster]);
+	  aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
+	  aHit.fWidth = ProcessWidth(vecRange[iCluster]);
+	  aHit.fRes = ProcessResolution(vecRange[iCluster]);
+	  aHit.fSplit=  ProcessSplitCheck(vecRange[iCluster]);
 
-	aHit.fCharge = ProcessCharge( vecRange[iCluster]);
-	aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
-	aHit.fWidth = ProcessWidth(vecRange[iCluster]);
-	aHit.fRes = ProcessResolution(vecRange[iCluster]);
-	aHit.splitLevel= ProcessSplitCheck(vecRange[iCluster]);
-
-	vHits.push_back(aHit);
+	  vHits.push_back(aHit);
       }
-
-      // FIXME:  we will split overlapping clusters  
-      nHits = nClusters; 
+      
+      // FIXME:  we will split overlapping clusters in later version
+      nHits = vHits.size(); 
       SortHits();
-    } // Pass if h_proj has non-zero entries
+    }// Pass if h_proj has non-zero entries
     else 
       nHits = 0;
-
-    h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found ",strProjName.Data(),nHits));
-
+    
+    if(nHits==0)
+      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
+			     strProjName.Data(),
+			     nHits));
+    else if(nHits>0)
+      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, Split level %d",
+			     strProjName.Data(),
+			     nHits,
+			     vHits[0].fSplit));
     return 0;
   } // Pass CheckNStrips()
-
 }
 
 vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
@@ -312,7 +317,7 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
 	break;
       } // End of switch
     } // End of iter while-loop
-    return min_counts; // Number of vallies found
+    return min_counts; // Number of local minimum found
   } // End of ... I know
   else
     return 0;  // No splitting found 

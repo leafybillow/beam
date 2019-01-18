@@ -9,7 +9,7 @@ struct AHit{
   double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
   double fRes;  // spatial resolution of this hits, unit um
   int fWidth; // A single hit width, unit: # of strips, a integer
-  int splitLevel;  // number of hits resolved from this cluster
+  int fSplit;  // if 0, no split is detected
 };
 
 class BeamGEMStrip;
@@ -24,6 +24,7 @@ class BeamGEMProjection: public TObject{
 
   // Called by Process
   vector< pair<int,int> > SearchClusters();
+  void SeparateHits(pair<int,int>);
   void SortHits(); 
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
