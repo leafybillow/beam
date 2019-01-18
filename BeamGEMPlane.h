@@ -14,6 +14,10 @@ class BeamGEMPlane: public TObject{
   vector<double> fCharge_y;
   vector<double> fWidth_x; // charge amplitude, unit: adc
   vector<double> fWidth_y;
+
+  vector<int> fSplit_x; // Split Level
+  vector<int> fSplit_y;
+
   vector<double> fCorelation; // (x-y)/(x+y)
 
   vector<int> vHitsMask_x;  // 1 : accept , 0 : reject 
@@ -49,8 +53,14 @@ class BeamGEMPlane: public TObject{
   inline vector<double> GetWidthX() const {return fWidth_x;};
   inline vector<double> GetWidthY() const {return fWidth_y;};
 
+  inline vector<int> GetSplitX() const {return fSplit_x;};
+  inline vector<int> GetSplitY() const {return fSplit_y;};
+
   inline vector<double> GetCorrelation() const {return fCorelation;};
   inline int GetNHits() const {return nHits;};
+
+  inline BeamGEMProjection* GetProjectionX() const {return bgProjX;};
+  inline BeamGEMProjection* GetProjectionY() const {return bgProjY;};
 
   void AddProjectionX( BeamGEMProjection* );
   void AddProjectionY( BeamGEMProjection* );

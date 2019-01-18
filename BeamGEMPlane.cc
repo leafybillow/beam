@@ -8,6 +8,7 @@ BeamGEMPlane::BeamGEMPlane(TString name)
   :fPos_x(NULL),fPos_y(NULL),
    fCharge_x(NULL),fCharge_y(NULL),
    fWidth_x(NULL),fWidth_y(NULL),
+   fSplit_x(NULL),fSplit_y(NULL),
    fCorelation(NULL),
    vHitsMask_x(NULL),vHitsMask_y(NULL),
    nHits(-1),
@@ -90,7 +91,7 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   c2->cd(1);
   bgProjX->GetTH1D()->Draw();
   
-  c1->SaveAs(Form("%s-%s-evt-%d.pdf",
+  c1->SaveAs(Form("%s-%s-evt-%d.png",
 		  runName.Data(),
 		  strPlaneName.Data(),
 		  ievt));
@@ -117,12 +118,14 @@ void BeamGEMPlane::CollectResults(){
     fCharge_x.push_back( vHits_x[iHits].fCharge);
     fPos_x.push_back( vHits_x[iHits].fPosition);
     fWidth_x.push_back( vHits_x[iHits].fWidth);
+    fSplit_x.push_back( vHits_x[iHits].fSplit);
   }
 
   for(int iHits=0;iHits<nHits_y;iHits++){
     fCharge_y.push_back( vHits_y[iHits].fCharge);
     fPos_y.push_back( vHits_y[iHits].fPosition);
     fWidth_y.push_back( vHits_y[iHits].fWidth);
+    fSplit_y.push_back( vHits_y[iHits].fSplit);
   }
 }
 
@@ -143,73 +146,73 @@ int BeamGEMPlane::Reconstruct_v0(){
     vHitsMask_y.push_back(1); 
     return 1;      // accept only one hit
   }
-  else if( nHits_y ==1 && nHits_x ==2) {
-    if( bgProjX->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_x.push_back(0);
-      return 1 ; 
-    }
-    else
-      return -1 ; // Not ready to resolve this type of hits yet
-  }
-  else if(nHits_x ==1 && nHits_y ==2 ){  
-    if( bgProjY->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(0);
-      return 1 ; 
-    }
-    else
-      return -1 ;
-  }
-  else if ( nHits_y ==2 && nHits_x == 2){
-    if( bgProjY->TestCrossTalk(0,1) &&
-	bgProjX->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(0);
-      vHitsMask_x.push_back(0);
-      return 1 ; 
-    }
-    else if( bgProjY->TestCrossTalk(0,1) ||
-	     bgProjX->TestCrossTalk(0,1) ){
+  // else if( nHits_y ==1 && nHits_x ==2) {
+  //   if( bgProjX->TestCrossTalk(0,1) ){
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_x.push_back(1);
+  //     vHitsMask_x.push_back(0);
+  //     return 1 ; 
+  //   }
+  //   else
+  //     return -1 ; // Not ready to resolve this type of hits yet
+  // }
+  // else if(nHits_x ==1 && nHits_y ==2 ){  
+  //   if( bgProjY->TestCrossTalk(0,1) ){
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_x.push_back(1);
+  //     vHitsMask_y.push_back(0);
+  //     return 1 ; 
+  //   }
+  //   else
+  //     return -1 ;
+  // }
+  // else if ( nHits_y ==2 && nHits_x == 2){
+  //   if( bgProjY->TestCrossTalk(0,1) &&
+  // 	bgProjX->TestCrossTalk(0,1) ){
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_x.push_back(1);
+  //     vHitsMask_y.push_back(0);
+  //     vHitsMask_x.push_back(0);
+  //     return 1 ; 
+  //   }
+  //   else if( bgProjY->TestCrossTalk(0,1) ||
+  // 	     bgProjX->TestCrossTalk(0,1) ){
 
-      return -1 ;
-    }
-    else {
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(1);
-      vHitsMask_x.push_back(1);
-      return 2; // accept two hits
-    }
-  }
-  else if (nHits_x>2 && nHits_y>2){
-    bool isCrossTalk_x = bgProjX->TestCrossTalk(0,1);
-    bool isCrossTalk_y = bgProjY->TestCrossTalk(0,1);
-    if( isCrossTalk_y==0 && isCrossTalk_x ==0 ){ // just test the first two
-      vHitsMask_y.push_back(1); 
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_x.push_back(1);
-      int ix = 2; 
-      int iy = 2;
-      while(ix<nHits_x){
-	vHitsMask_x.push_back(0);
-	ix++;
-      }
-      while(iy<nHits_y){
-	vHitsMask_y.push_back(0);
-	iy++;
-      }
+  //     return -1 ;
+  //   }
+  //   else {
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_x.push_back(1);
+  //     vHitsMask_y.push_back(1);
+  //     vHitsMask_x.push_back(1);
+  //     return 2; // accept two hits
+  //   }
+  // }
+  // else if (nHits_x>2 && nHits_y>2){
+  //   bool isCrossTalk_x = bgProjX->TestCrossTalk(0,1);
+  //   bool isCrossTalk_y = bgProjY->TestCrossTalk(0,1);
+  //   if( isCrossTalk_y==0 && isCrossTalk_x ==0 ){ // just test the first two
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_y.push_back(1); 
+  //     vHitsMask_x.push_back(1);
+  //     vHitsMask_x.push_back(1);
+  //     int ix = 2; 
+  //     int iy = 2;
+  //     while(ix<nHits_x){
+  // 	vHitsMask_x.push_back(0);
+  // 	ix++;
+  //     }
+  //     while(iy<nHits_y){
+  // 	vHitsMask_y.push_back(0);
+  // 	iy++;
+  //     }
 
-      return 2 ;
-    }
-    else {
-      return -1 ;
-    }
-  }
+  //     return 2 ;
+  //   }
+  //   else {
+  //     return -1 ;
+  //   }
+  // }
   else 
     return -1;  // ignore this events
 }
