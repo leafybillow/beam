@@ -17,12 +17,12 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
 
   // Header for GEM
-  TString header_filename = "analysis_rms.h";
+  TString header_filename = Form("DBfiles/analysis_rms.h_%s",prefix_t.Data());
   FILE *header_file = fopen(header_filename.Data(),"w");
   
   // Insert a comment line 
   fprintf(header_file,"\n");
-  fprintf(header_file," //// RMS arrays");
+  fprintf(header_file," //// RMS arrays %s", prefix_t.Data());
   
   const int nproj = 4;
   TH1D* hped_mean[nproj];
