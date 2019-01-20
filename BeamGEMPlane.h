@@ -1,5 +1,4 @@
 #include <TObject.h>
-#include <RooInt.h>
 #include <vector>
 #include <TH1.h>
 #include <TCanvas.h>

@@ -1,5 +1,5 @@
 #include <TObject.h>
-#include <RooInt.h>
+
 class TH1D;
 class BeamGEMStrip: public TObject{
  private:

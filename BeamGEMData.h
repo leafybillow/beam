@@ -1,5 +1,4 @@
 #include <TObject.h>
-#include <RooInt.h>
 
 class BeamGEMData : public TObject{
   
