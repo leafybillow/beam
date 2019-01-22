@@ -4,10 +4,10 @@
 #include "TCanvas.h"
 ClassImp(BeamGEMProjection);
 #define WIDTH_CUT 1 ; // Rejecting single active channel 
-#define MAX_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
+#define THRESHOLD_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
 #define SPLIT_FRAC 0.1 ; 
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
-  :vBGStrips(NULL),vHits(NULL),nHits(-1){
+  :vBGStrips(),vHits(),nHits(-1){
   nStrips = nch;
   strProjName = Name;
   Init();
@@ -23,8 +23,15 @@ void BeamGEMProjection::Init(){
   h_proj = new TH1D("",Form("Projection on %s",strProjName.Data()),
 		    nStrips,-length/2.0,length/2.0);
 }
-
 int BeamGEMProjection::Process(){
+
+  int status = CoarseProcess();
+  if(status)
+    status = FineProcess();
+    
+  return status;
+}
+int BeamGEMProjection::CoarseProcess(){
 
   if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;
@@ -32,38 +39,46 @@ int BeamGEMProjection::Process(){
 
     if(h_proj->GetEntries()>0){
       vector< pair<int,int> > vecRange=SearchClusters();
-      AHit aHit;
+      ACluster aCluster;
       int nClusters = vecRange.size();
-      for(int iCluster=0; iCluster <nClusters;iCluster++){
-	  aHit.fCharge = ProcessCharge( vecRange[iCluster]);
-	  aHit.fPosition = ProcessCentroid( vecRange[iCluster]);
-	  aHit.fWidth = ProcessWidth(vecRange[iCluster]);
-	  aHit.fRes = ProcessResolution(vecRange[iCluster]);
-	  aHit.fSplit=  ProcessSplitCheck(vecRange[iCluster]);
-
-	  vHits.push_back(aHit);
-      }
       
-      // FIXME:  we will split overlapping clusters in later version
-      nHits = vHits.size(); 
-      SortHits();
+      for(int iCluster=0; iCluster <nClusters;iCluster++){
+	  aCluster.fCharge = ProcessCharge( vecRange[iCluster]);
+	  aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
+	  aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
+	  aCluster.fSplit =  ProcessSplitCheck(vecRange[iCluster]);
+	  vClusters.push_back( aCluster);
+      }
+      SortClusters();
+      RejectCrossTalk();
+      // update number of clusters after cross talk rejection
+      nClusters = vClusters.size();
     }// Pass if h_proj has non-zero entries
     else 
-      nHits = 0;
+      nClusters = 0;
+
+    // summarize nHits counting splitting peaks
+    nHits = nClusters;
+    for(int iCluster =0; iCluster<nClusters;iCluster++){
+      nHits += vClusters[iCluster].fSplit;
+    }
     
-    if(nHits==0)
+    if(nClusters==0)
       h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
 			     strProjName.Data(),
-			     nHits));
-    else if(nHits>0)
-      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, Split level %d",
+			     nClusters));
+    else if(nClusters>0)
+      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, Main Split level %d",
 			     strProjName.Data(),
-			     nHits,
-			     vHits[0].fSplit));
+			     nClusters,
+			     vClusters[0].fSplit));
     return 0;
   } // Pass CheckNStrips()
 }
-
+int BeamGEMProjection::FineProcess(){
+  //FIXME: TO-DO
+  return 0 ;
+}
 vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
 
   vector< pair<int,int> > vecRange;
@@ -127,6 +142,26 @@ double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
   res = res/ width; 
   return res;
 }
+void BeamGEMProjection::SortClusters(){
+  // Sort Cluster by Charge Amplitude.
+  // We do this to prepare for cross talk check 
+  // insertion sort is used here
+  ACluster aCluster_buff;
+  for(int iCluster=1; iCluster<nClusters; iCluster++){
+    aCluster_buff = vClusters[iCluster];
+    int jCluster = iCluster-1;
+    while(jCluster>=0 && vClusters[jCluster].fCharge < aCluster_buff.fCharge){
+      vClusters[jCluster+1]=vClusters[jCluster];
+      jCluster = jCluster-1;
+    }
+    vClusters[jCluster+1]=aCluster_buff;
+  }
+  // idiot check
+  for(int iCluster=0; iCluster<nClusters-1; iCluster++){
+    if( vClusters[iCluster].fCharge < vClusters[iCluster+1].fCharge)
+      std::cout << "Sorting went wrong! " << std::endl;
+  }
+}
 
 void BeamGEMProjection::SortHits(){
   // Sort Hits by Charge Amplitude.
@@ -187,9 +222,21 @@ void BeamGEMProjection::PlotResults(TString runName, int ievt){
   delete c1;
 }
 
+void BeamGEMProjection::RejectCrossTalk(){
 
-int BeamGEMProjection::TestCrossTalk(int iHit1, int iHit2){
 
+}
+
+int BeamGEMProjection::TestCrossTalk(int iHit1,int iHit2){
+  return TestCrossTalk_v2(iHit1, iHit2);
+}
+int BeamGEMProjection::TestCrossTalk_v2(int iHit1, int iHit2){
+
+  
+  return 0;
+}
+
+int BeamGEMProjection::TestCrossTalk_v1(int iHit1, int iHit2){
   // int strip[4] = {32,88,118,127} ;  unit  number strips
   double target[4] = {12.8, 35.2, 47.2, 50.8}; // target = strip*0.4 unit: mm
   
@@ -210,21 +257,18 @@ int BeamGEMProjection::TestCrossTalk(int iHit1, int iHit2){
     return 0;
   }
   else{
-    
     while(isCrossTalk==0 && i!=4 ){
-
-      if( fabs(separation-target[i])<=width ) 
+      if( fabs(separation-target[i])<=width ){
 	isCrossTalk = 1;
-      
+	break;
+      }
       i++;
     }
-
     if(isCrossTalk)
       return 1;
     else
       return 0;
   }
-
 }
 
 void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
@@ -257,7 +301,7 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
     
   }
   
-  if(sumMask == vHits.size())
+  if(sumMask == (int)vHits.size())
     nHits = vHits.size();
   else{
     std::cerr << "Error : " 
@@ -281,7 +325,7 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
   int end = prRange.second;
   int width = prRange.second - prRange.first;
 
-  int kMaxSize = MAX_WIDTH;
+  int kMaxSize = THRESHOLD_WIDTH;
   double frac = SPLIT_FRAC;
   double frac_up = 1.0 + frac;
   double frac_down = 1.0 -frac;
