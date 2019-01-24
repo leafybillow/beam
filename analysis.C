@@ -1,7 +1,7 @@
 #include "analysis_rms.h"
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
 
-Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
+Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSuppression=1){
   
   gSystem->Load("libbeam.so");
 
@@ -145,12 +145,14 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 	Int_t myStripID = (Int_t)bgData[iProj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
 	// effectively zero suppression
-	if(bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich]){ 
+	if(!zeroSuppression || bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich]){ 
 	  bgStrip->Process();
 	  bgProjection[iProj]->AddStrip(bgStrip);
 	}
       } // End channel loop
-      bgProjection[iProj]->Process();
+      if(!isDebug){
+	bgProjection[iProj]->Process();
+      }
     } // End Projection Loop
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     BeamGEMPlane* bgPlane1 = new BeamGEMPlane("gem1");
@@ -160,9 +162,11 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
     bgPlane2->AddProjectionX(bgProjection[2]);
     bgPlane2->AddProjectionY(bgProjection[3]);
 
-    bgPlane1->Process();
-    bgPlane2->Process();
-
+    if(!isDebug){
+      bgPlane1->Process();
+      bgPlane2->Process();
+    }
+    
     bgTracker->AddPlane(bgPlane1);
     bgTracker->AddPlane(bgPlane2);
     // FIXME: a better way to do this
@@ -173,8 +177,7 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 
     vWidth_x1 = bgPlane1->GetWidthX();
     vWidth_y1 = bgPlane1->GetWidthY();
-    vSplit_x1 = bgPlane1->GetSplitX();
-    vSplit_y1 = bgPlane1->GetSplitY();
+
     nHits_1 = bgPlane1->GetNHits();
 
     vCharge_x2 = bgPlane2->GetChargeX();
@@ -184,19 +187,16 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
 
     vWidth_x2 = bgPlane2->GetWidthX();
     vWidth_y2 = bgPlane2->GetWidthY();
-    vSplit_x2 = bgPlane2->GetSplitX();
-    vSplit_y2 = bgPlane2->GetSplitY();
+
     nHits_2 = bgPlane2->GetNHits();
 
     
-    if (isDebug!=1){
+    if (!isDebug){
       tree_rec->Fill();
     }
 
     if(isDebug){
-      if(qdc.us_hi > 1600 && nHits_1==1 && nHits_2==1){
 	bgTracker->PlotResults(prefix_t,ievt);
-      }
     }
 
   } // End Event loop
