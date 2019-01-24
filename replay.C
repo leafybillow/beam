@@ -37,7 +37,7 @@ void replay(int run_num){
   
   // Define the run(s) that we want to analyze.
   // We just set up one, but this could be many.
-  THaRun* run = new THaRun(Form("/export/home/taoye/analyzer/raw-data/run_%d.dat",run_num));
+  THaRun* run = new THaRun(Form("/home/yetao/workarea/slac_beam/raw_data/run_%d.dat",run_num));
   run->SetLastEvent(-1);
   run->SetDataRequired(0);
   run->SetDate(TDatime());
@@ -46,7 +46,7 @@ void replay(int run_num){
   
   // Define the analysis parameters
   analyzer->SetEvent( event );
-  analyzer->SetOutFile(Form("/export/home/taoye/analyzer/rootfiles/run_%d.root",run_num));
+  analyzer->SetOutFile(Form("/home/yetao/workarea/slac_beam/rootfiles/run_%d.root",run_num));
   // File to record cuts accounting information
   analyzer->SetSummaryFile("summary_example.log"); // optional
   //analyzer->SetCompressionLevel(0); // turn off compression
