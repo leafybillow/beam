@@ -4,9 +4,9 @@ ClassImp(BeamGEMData);
 
 BeamGEMData::BeamGEMData()
   :adc(),
-   adc_sum(NULL),
-   common_mode(NULL),
-   id_strip(NULL),
+   adc_sum(),
+   common_mode(),
+   id_strip(),
    nChannel(-1),
    id_Proj(-1)
 {

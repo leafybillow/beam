@@ -1,5 +1,8 @@
 #include <TObject.h>
 
+// This is just a class of container to hold GEM raw data in the first step.
+// It also helps to avoid potential memory padding problem of using C structure.
+
 class BeamGEMData : public TObject{
   
  private:
