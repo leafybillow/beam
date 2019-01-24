@@ -5,12 +5,12 @@
 ClassImp(BeamGEMPlane);
 
 BeamGEMPlane::BeamGEMPlane(TString name)
-  :fPos_x(NULL),fPos_y(NULL),
-   fCharge_x(NULL),fCharge_y(NULL),
-   fWidth_x(NULL),fWidth_y(NULL),
-   fSplit_x(NULL),fSplit_y(NULL),
-   fCorelation(NULL),
-   vHitsMask_x(NULL),vHitsMask_y(NULL),
+  :fPos_x(),fPos_y(),
+   fCharge_x(),fCharge_y(),
+   fWidth_x(),fWidth_y(),
+   fSplit_x(),fSplit_y(),
+   fCorelation(),
+   vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
    bgProjX(NULL),bgProjY(NULL)
 {  
@@ -23,13 +23,18 @@ int BeamGEMPlane::Process(){
   int status = CheckProjections();
   if(status==0){
 
-    nHits = Reconstruct();
-    if(nHits >0 ){
-      bgProjY->UpdateHits(vHitsMask_y);
-      bgProjX->UpdateHits(vHitsMask_x);
+    // nHits = Reconstruct();
+    // if(nHits >0 ){
+    //   bgProjY->UpdateHits(vHitsMask_y);
+    //   bgProjX->UpdateHits(vHitsMask_x);
+    //   CollectResults();
+    // }
+    int nHits_x = bgProjX->GetNHits();
+    int nHits_y = bgProjY->GetNHits();
+    nHits = (nHits_x >= nHits_y ? nHits_x : nHits_y);
+    if(nHits == 1)
       CollectResults();
-    }
-
+    return 0;
   }
   else
     return 1; // Fail PlaneName Check
@@ -68,7 +73,8 @@ int BeamGEMPlane::CheckProjections(){
 }
 
 int BeamGEMPlane::Reconstruct(){
-  return Reconstruct_v0();
+  
+  return 0;
 }
 
 double BeamGEMPlane::EvalCorrelation(double x, double y){
@@ -111,109 +117,21 @@ void BeamGEMPlane::CollectResults(){
   vector< AHit> vHits_x = bgProjX->GetHits();
   vector< AHit> vHits_y = bgProjY->GetHits();
 
-  int nHits_x = vHits_x.size();
-  int nHits_y = vHits_y.size();
+  int nHits_x = bgProjX->GetNHits();
+  int nHits_y = bgProjY->GetNHits();
 
   for(int iHits=0;iHits<nHits_x;iHits++){
     fCharge_x.push_back( vHits_x[iHits].fCharge);
     fPos_x.push_back( vHits_x[iHits].fPosition);
     fWidth_x.push_back( vHits_x[iHits].fWidth);
-    fSplit_x.push_back( vHits_x[iHits].fSplit);
+    // fSplit_x.push_back( vHits_x[iHits].fSplit);
   }
 
   for(int iHits=0;iHits<nHits_y;iHits++){
     fCharge_y.push_back( vHits_y[iHits].fCharge);
     fPos_y.push_back( vHits_y[iHits].fPosition);
     fWidth_y.push_back( vHits_y[iHits].fWidth);
-    fSplit_y.push_back( vHits_y[iHits].fSplit);
+    // fSplit_y.push_back( vHits_y[iHits].fSplit);
   }
-}
-
-int BeamGEMPlane::Reconstruct_v0(){
-  // ver 0
-  // Only used to separate out zero and single hit
-
-  int nHits_x = bgProjX->GetNHits();
-  int nHits_y = bgProjY->GetNHits();
-
-  vHitsMask_x.clear();
-  vHitsMask_y.clear();
-  if(nHits_y==0 ||nHits_x==0){
-    return 0;  
-  }
-  else if(nHits_y==1 && nHits_x==1){
-    vHitsMask_x.push_back(1);
-    vHitsMask_y.push_back(1); 
-    return 1;      // accept only one hit
-  }
-  else if( nHits_y ==1 && nHits_x ==2) {
-    if( bgProjX->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_x.push_back(0);
-      return 1 ; 
-    }
-    else
-      return -1 ; // Not ready to resolve this type of hits yet
-  }
-  else if(nHits_x ==1 && nHits_y ==2 ){  
-    if( bgProjY->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(0);
-      return 1 ; 
-    }
-    else
-      return -1 ;
-  }
-  else if ( nHits_y ==2 && nHits_x == 2){
-    if( bgProjY->TestCrossTalk(0,1) &&
-  	bgProjX->TestCrossTalk(0,1) ){
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(0);
-      vHitsMask_x.push_back(0);
-      return 1 ; 
-    }
-    else if( bgProjY->TestCrossTalk(0,1) ||
-  	     bgProjX->TestCrossTalk(0,1) ){
-
-      return -1 ;
-    }
-    else {
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_y.push_back(1);
-      vHitsMask_x.push_back(1);
-      return 2; // accept two hits
-    }
-  }
-  else if (nHits_x>2 && nHits_y>2){
-    bool isCrossTalk_x = bgProjX->TestCrossTalk(0,1);
-    bool isCrossTalk_y = bgProjY->TestCrossTalk(0,1);
-    if( isCrossTalk_y==0 && isCrossTalk_x ==0 ){ // just test the first two
-      vHitsMask_y.push_back(1); 
-      vHitsMask_y.push_back(1); 
-      vHitsMask_x.push_back(1);
-      vHitsMask_x.push_back(1);
-      int ix = 2; 
-      int iy = 2;
-      while(ix<nHits_x){
-  	vHitsMask_x.push_back(0);
-  	ix++;
-      }
-      while(iy<nHits_y){
-  	vHitsMask_y.push_back(0);
-  	iy++;
-      }
-
-      return 2 ;
-    }
-    else {
-      return -1 ;
-    }
-  }
-  else 
-    return -1;  // ignore this events
 }
 

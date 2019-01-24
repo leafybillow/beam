@@ -30,7 +30,6 @@ class BeamGEMPlane: public TObject{
   //Process functions
 
   int Reconstruct(); // return number of hits
-  int Reconstruct_v0(); // First order testing
 
   void CollectResults();
   double EvalCorrelation(double charge_x, double charge_y);

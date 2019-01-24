@@ -37,14 +37,15 @@ const int higher_neighbor[128]=
    16,17,18,19,20,21,22,23,
    24,25,26,27,28,29,30,31,
    2,3,4,5,6,7,-1,0}; // [istrip]
-// returns physical strip number of its adjacent channelx
+// returns physical strip number of its adjacent channels
 
 using namespace std;
 
 struct ACluster{
-  double fPosition; // Cluster position in this coordinate, unit:mm
+  double fPosition; // Cluster position in this projection, unit:mm
   double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
   int fWidth; // A cluster width, unit: # of strips, an integer
+  pair<int, int> pRange;
   int fSplit;  // if 0, no split is detected
 };
 
@@ -67,7 +68,8 @@ class BeamGEMProjection: public TObject{
   int nHits;
   int nClusters;
   TString strProjName; // e.g. x1, x2 , y1, y2
-
+  TH1D* h_proj;
+  
   void Init();
   // Called by Process
   // Coarse Process for Clusters
@@ -80,9 +82,9 @@ class BeamGEMProjection: public TObject{
   int ProcessSplitCheck(pair<int,int>);
   
   void RejectCrossTalk(); 
-  int TestCrossTalk(int iHit1, int iHit2); // 1 : suspected as a cross talk pair; if 0: it is not
-  int TestCrossTalk_v1(int iHit1, int iHit2);
-  int TestCrossTalk_v2(int iHit1, int iHit2);
+  int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
+  // int TestCrossTalk_v1(int iHit1, int iHit2);
+
   // Fine Process for Hits
   int FineProcess();
   void SeparateHits(pair<int,int>); // FIXME: to-do
@@ -91,9 +93,10 @@ class BeamGEMProjection: public TObject{
 
   int CheckNStrips();
   void FitCluster(int nPeaks); // Not Used for now
-  TH1D* h_proj;
+
 
  public:
+  BeamGEMProjection();
   BeamGEMProjection(TString projName, Int_t nch);
   ~BeamGEMProjection();
   
