@@ -68,7 +68,8 @@ class BeamGEMProjection: public TObject{
   int nHits;
   int nClusters;
   TString strProjName; // e.g. x1, x2 , y1, y2
-  TH1D* h_proj;
+  TH1D* h_proj; // zero-suppressed histogram for calculation,
+  TH1D* h_raw;  // histogram for plotting results
   
   void Init();
   // Called by Process
@@ -104,7 +105,7 @@ class BeamGEMProjection: public TObject{
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};
-  inline TH1D* GetTH1D() const {return h_proj;};
+  inline TH1D* GetHistogram() const {return h_raw;};
 
   // Called by Users
   int Process();

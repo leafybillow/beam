@@ -12,7 +12,7 @@ BeamGEMProjection::BeamGEMProjection()
   :vBGStrips(),vHits(),vClusters(),
    nHits(-1),nClusters(-1),
    strProjName(),
-   h_proj()
+   h_proj(),h_raw()
 {
 }
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
@@ -33,6 +33,11 @@ void BeamGEMProjection::Init(){
 
   h_proj = new TH1D("",Form("Projection on %s",strProjName.Data()),
 		    nStrips,-length/2.0,length/2.0);
+  
+  h_raw = new TH1D("",Form("Projection on %s",strProjName.Data()),
+		    nStrips,-length/2.0,length/2.0);
+  h_raw->GetYaxis()->SetTitle("Charge(ADC counts)");
+  h_raw->GetXaxis()->SetTitle("Position(mm)");
 }
 int BeamGEMProjection::Process(){
 
@@ -76,14 +81,14 @@ int BeamGEMProjection::CoarseProcess(){
     }
     
     if(nClusters==0)
-      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
+      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
 			     strProjName.Data(),
 			     nClusters));
     else if(nClusters>0)
-      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, Main Split level %d",
+      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, %d Hit(s) Identified",
 			     strProjName.Data(),
 			     nClusters,
-			     vClusters[0].fSplit));
+			     nHits));
     return 0; // OK
   } // Pass CheckNStrips()
 }
@@ -231,16 +236,19 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 
   double ampl = bgGEMStrip->GetAmplitude();
   int strip_id = bgGEMStrip->GetStripID();
-  h_proj->SetBinContent(strip_id,ampl);
+  bool zsflag = bgGEMStrip->GetZSStatus();
+  
+  if(!zsflag){ // if not zero suppressed
+    h_proj->SetBinContent(strip_id,ampl);
+  }
 
+  h_raw->SetBinContent(strip_id,ampl);
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
   TCanvas *c1 = new TCanvas("","c1", 800,400);
   c1->cd();
-  h_proj->Draw();
-  h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
-  h_proj->GetXaxis()->SetTitle("Position(mm)");
+  h_raw->Draw();
 
   c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
 
@@ -382,9 +390,9 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 	      << std::endl;
   }
   
-  TString title = h_proj->GetTitle();
+  TString title = h_raw->GetTitle();
   TString append = Form(", %d hit(s) confirmed", nHits);
-  h_proj->SetTitle(title+append);
+  h_raw->SetTitle(title+append);
 
 }
 
