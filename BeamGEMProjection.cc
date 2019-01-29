@@ -12,7 +12,9 @@ BeamGEMProjection::BeamGEMProjection()
   :vBGStrips(),vHits(),vClusters(),
    nHits(-1),nClusters(-1),
    strProjName(),
-   h_proj(),h_raw()
+   h_proj(),h_raw(),
+   vStat(),vBaseline(),
+   baseline_mean(0),baseline_rms(0),overall_mean(0),overall_rms(0)
 {
 }
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
@@ -38,7 +40,9 @@ void BeamGEMProjection::Init(){
 		    nStrips,-length/2.0,length/2.0);
   h_raw->GetYaxis()->SetTitle("Charge(ADC counts)");
   h_raw->GetXaxis()->SetTitle("Position(mm)");
+  
 }
+
 int BeamGEMProjection::Process(){
 
   int status = CoarseProcess();
@@ -48,7 +52,15 @@ int BeamGEMProjection::Process(){
   return status;
 }
 int BeamGEMProjection::CoarseProcess(){
+  // Compute baseline RMS and mean;
+  baseline_mean = CalculateMean(vBaseline);
+  baseline_rms = CalculateRMS(vBaseline);
+  baseline_rms = sqrt( pow(baseline_rms,2) - pow(baseline_mean,2));
 
+  overall_mean = CalculateMean(vStat);
+  overall_rms = CalculateRMS(vStat);
+  overall_rms = sqrt(pow(overall_rms,2) - pow(overall_mean,2));
+  
   if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;//Failed
   else{
@@ -241,8 +253,13 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
   if(!zsflag){ // if not zero suppressed
     h_proj->SetBinContent(strip_id,ampl);
   }
-
+  
+  if(zsflag)
+    vBaseline.push_back(ampl);
+  
   h_raw->SetBinContent(strip_id,ampl);
+  vStat.push_back(ampl);
+
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
@@ -445,3 +462,41 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
   else
     return 0;  // No splitting found 
 }
+
+
+double BeamGEMProjection::CalculateMean(vector<double> aVector){
+  double sum = 0;
+  int counts = 0;
+  vector<double>::iterator iter = aVector.begin();
+  while(iter!=aVector.end()){
+    sum += *iter;
+    counts++;
+    iter++;
+  }
+  if(counts!=0){
+    double mean = sum /counts;
+    return mean;
+  }
+  else
+    return 0;
+}
+
+double BeamGEMProjection::CalculateRMS(vector<double> aVector){
+  double sum = 0;
+  int counts = 0;
+  vector<double>::iterator iter = aVector.begin();
+  while(iter!=aVector.end()){
+    double buff = *iter;
+    sum += (buff*buff);
+    counts++;
+    iter++;
+  }
+  if(counts!=0){
+    double rms = sqrt(sum /counts);
+    return rms;
+  }
+  else
+    return 0;
+}
+
+
