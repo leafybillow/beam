@@ -13,7 +13,8 @@ BeamGEMStrip::BeamGEMStrip(double* d, int id){
   fT_max = 0.0;
   fADCsum= 0.0; 
   id_strip= id ;
-
+  kZeroSuppression = 1;
+  
   WriteSamples(d);
   Init();
 }
@@ -77,15 +78,16 @@ void BeamGEMStrip::FitData(){
 }
 
 void BeamGEMStrip::Process(){
-  //  FitData();
+  if(!kZeroSuppression){
+    /* Do something here*/
+    //  FitData();
+  }
 }
 
 void BeamGEMStrip::Init(){
-
   fT_max = FindMaximum();
   fAmpl_raw = fData[fT_max];
   fADCsum = SumADC();
-
 }
 
 double BeamGEMStrip::CRRCShaping(double* x, double* par){
@@ -108,5 +110,8 @@ double BeamGEMStrip::CRRCShaping(double* x, double* par){
 double BeamGEMStrip::GetAmplitude(){
   // FIXME
   return GetADCsum();
+}
 
+void BeamGEMStrip::SetZeroSuppression(bool zsflag){
+  kZeroSuppression = zsflag;
 }

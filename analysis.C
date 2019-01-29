@@ -1,7 +1,7 @@
 #include "analysis_rms.h"
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
 
-Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSuppression=1){
+Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   
   gSystem->Load("libbeam.so");
 
@@ -144,15 +144,17 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
 	} 
 	Int_t myStripID = (Int_t)bgData[iProj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
-	// effectively zero suppression
-	if(!zeroSuppression || bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich]){ 
-	  bgStrip->Process();
-	  bgProjection[iProj]->AddStrip(bgStrip);
+	// Zero suppression
+	Bool_t kZeroSuppression = 1; // Suppressed by defaultp
+	if(bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich]){
+	  kZeroSuppression = 0; // Not Suppressed
 	}
+	bgStrip->SetZeroSuppression(kZeroSuppression);
+	// bgStrip->Process(); // FIXME: Not implemented now
+	bgProjection[iProj]->AddStrip(bgStrip);
+
       } // End channel loop
-      if(!isDebug){
-	bgProjection[iProj]->Process();
-      }
+      bgProjection[iProj]->Process();
     } // End Projection Loop
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     BeamGEMPlane* bgPlane1 = new BeamGEMPlane("gem1");
@@ -162,10 +164,8 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
     bgPlane2->AddProjectionX(bgProjection[2]);
     bgPlane2->AddProjectionY(bgProjection[3]);
 
-    if(!isDebug){
-      bgPlane1->Process();
-      bgPlane2->Process();
-    }
+    bgPlane1->Process();
+    bgPlane2->Process();
     
     bgTracker->AddPlane(bgPlane1);
     bgTracker->AddPlane(bgPlane2);
