@@ -2,7 +2,10 @@
 #include "BeamGEMStrip.h"
 #include <iostream>
 #include "TCanvas.h"
+#include "TText.h"
+
 ClassImp(BeamGEMProjection);
+
 #define WIDTH_CUT 1 ; // Rejecting single active channel 
 #define THRESHOLD_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
 #define SPLIT_FRAC 0.1 ;
@@ -267,7 +270,17 @@ void BeamGEMProjection::PlotResults(TString runName, int ievt){
   c1->cd();
   h_raw->Draw();
 
-  c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
+  TString title = h_raw->GetTitle();
+  title = title+Form(", Noise RMS %d",(int)baseline_rms);
+  h_raw->SetTitle(title);
+  
+  TText *text= new TText(0.0,0.95,
+			 Form("%s-%s-evt-%d",runName.Data(),strProjName.Data(),ievt));
+  text->SetNDC();
+  text->Draw("same");
+
+  
+  c1->SaveAs( Form("%s-%s-evt%d.png",runName.Data(),strProjName.Data(), ievt) );
 
   delete c1;
 }
