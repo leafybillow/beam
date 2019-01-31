@@ -2,6 +2,7 @@
 #include "TH1.h"
 #include "TF1.h"
 #include "TMath.h"
+#include "TCanvas.h"
 
 ClassImp(BeamGEMStrip);
 
@@ -114,4 +115,26 @@ double BeamGEMStrip::GetAmplitude(){
 
 void BeamGEMStrip::SetZeroSuppression(bool zsflag){
   kZeroSuppression = zsflag;
+}
+
+// FIXME: will fix - TY
+void BeamGEMStrip::PlotStrip(TString runName,int ievt, int iproj, int istrip){
+  TCanvas *c1 = new TCanvas("c1","c1",400,400);
+  
+  TString title = Form("%s_evt%d_proj%d_strip%d",
+		       runName.Data(),ievt,iproj,istrip);
+  
+  TH1D *h_strip = new TH1D("h_strip",title,6,-0.5,5.5);
+
+  for(int i=0;i<6;i++){
+    h_strip->SetBinContent(i+1,fData[i]);
+  }
+  
+  c1->cd();
+  h_strip->Draw();
+  c1->SaveAs(Form("%s.png",title.Data()));
+
+  delete c1;
+  delete h_strip;
+	     
 }
