@@ -135,9 +135,9 @@ void PrintUsage(){
       <<"Print help info " << endl;
   cout<< "\t" << "-t <analysis_type>: "
       <<" Optional, available options: ped, rms, ana. " << endl;
-  cout << "\t \t : Default mode, reconstruction and  tracking analysis" << endl;
-  cout << "\t \t : Generate a pedestal DB file for specific run" << endl;
-  cout << "\t \t : Generate a pedestal RMS table file" << endl;
+  cout << "\t \t ana : Default mode, reconstruction and  tracking analysis" << endl;
+  cout << "\t \t ped : Generate a pedestal DB file for specific run" << endl;
+  cout << "\t \t rms : Generate a pedestal RMS table file" << endl;
   
   cout<< "\t" << "-c <config_file>: "
       <<"optional, use beam.config by default " << endl;
