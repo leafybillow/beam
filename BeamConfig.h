@@ -25,7 +25,8 @@ class BeamConfig{
   TString configName;
   ifstream configFile;
   
-  vector<Double_t> z_position;
+  vector<Double_t> gem_position;
+  vector<Double_t> det_position;
   
   int ParseFile();
   vector<TString>  ParseLine(TString, TString);

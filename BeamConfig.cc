@@ -85,6 +85,25 @@ int BeamConfig::ParseFile(){
       n_gem = vecStr[1].Atoi();
       continue;
     }
+    if(vecStr[0].Contains("gem_position")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	gem_position.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+    if(vecStr[0].Contains("det_position")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_position.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
     else{
       cerr << __FILE__ << ":"
   	   << __FUNCTION__ << ":"
@@ -128,6 +147,24 @@ void BeamConfig::PrintSummary(){
        << "DB file path: "  << db_path  << endl;
   cout << "--"
        << "Number of GEM planes: "  << n_gem  << endl;
+  cout << "--"
+       << "GEM Plane Z positions (mm): ";
+  vector<Double_t>::iterator it_gem = gem_position.begin();
+  while(it_gem!=gem_position.end() ){
+    cout << *it_gem << " ";
+    it_gem++;
+  }
+  cout << endl;
+  
+  cout << "--"
+       << "Detector Plane Z positions (mm): ";
+  vector<Double_t>::iterator it_det = det_position.begin();
+  while(it_det!=det_position.end() ){
+    cout << *it_det << " ";
+    it_det++;
+  }
+  cout << endl;
+  
   cout << "--"
        << "Zero Suppression threshold: "  << fZSThreshold << endl;
 }
