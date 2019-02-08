@@ -16,6 +16,7 @@ class BeamConfig{
   Int_t n_gem;
   
   Int_t run_num;
+  Bool_t kPlot;
   
   TString output_name;
   TString input_name;
@@ -41,13 +42,15 @@ class BeamConfig{
   inline TString GetDBTemplate() const { return db_template;};
   inline Int_t GetRunNumber() const { return run_num;};
   inline Double_t GetZSThreshold() const { return fZSThreshold;};
-  inline Int_t GetAnalysisType() const{return analysisType;};
+  inline Int_t GetAnalysisType() const{ return analysisType;};
+  inline Bool_t GetPlotMode() const{ return kPlot;};
   
   inline void SetOutputName(TString str){output_name=str;};
   inline void SetInputName(TString str){input_name=str;};
   inline void SetAnalysisType(Int_t i){analysisType=i;};
   inline void SetRunNumber(Int_t i){run_num=i;};
   inline void SetConfigFile(TString str){configName=str;};
+  inline void SetPlotMode(Bool_t flag){kPlot=flag;};
   
   ClassDef(BeamConfig,0);
 };

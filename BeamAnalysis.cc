@@ -24,13 +24,18 @@ ClassImp(BeamAnalysis);
 BeamAnalysis::BeamAnalysis(BeamConfig *beamConfig){
   fConfig = beamConfig;
 
+  kPlot=fConfig->GetPlotMode();
+  
   rf_raw = TFile::Open(fConfig->GetInputName());
   TString input_filename = rf_raw->GetName(); 
   cout << "--Input file " << input_filename << " is opened. " << endl;
-  
-  rf_output = TFile::Open(fConfig->GetOutputName() ,"RECREATE");
-  TString output_filename = rf_output->GetName();
-  cout << "--Output ROOTFile " << output_filename << " is recreated. " << endl;
+  if(!kPlot){
+    rf_output = TFile::Open(fConfig->GetOutputName() ,"RECREATE");
+    TString output_filename = rf_output->GetName();
+    cout << "--Output ROOTFile " << output_filename << " is recreated. " << endl;
+  }
+  else
+    cout << "--Plot Mode is ON" << endl;
 }
 
 BeamAnalysis::~BeamAnalysis(){
@@ -42,7 +47,7 @@ int BeamAnalysis::Process(){
 
   switch(anaType){
   case 0:
-    Analysis(0);
+    Analysis();
     break;
   case 1:
     CalculatePed();
@@ -50,13 +55,11 @@ int BeamAnalysis::Process(){
   case 2:
     CalculateRMS();
     break;
-  case 3:
-    Analysis(1);
-    break;
   }
     
   rf_raw->Close();
-  rf_output->Close();
+  if(!kPlot)
+    rf_output->Close();
   
   return 0;
 }
@@ -281,7 +284,7 @@ int BeamAnalysis::CalculateRMS(){
   return 0;
 }
 
-int BeamAnalysis::Analysis(Bool_t kPlot){
+int BeamAnalysis::Analysis(){
   
   TString input_name = fConfig->GetInputName();
   Ssiz_t first_t = input_name.Last('/') +1; // if a slash is not there, return 0.
@@ -290,10 +293,7 @@ int BeamAnalysis::Analysis(Bool_t kPlot){
   TString prefix_t = input_name(first_t,length_t);
 
   cout << "--Begin Reconstruction and Tracking analysis " << endl;
-  
-  // Reconstructed Tree
-  TTree* tree_rec = new TTree("Rec","Rec"); 
-  //And Build  Reconstruction Branch
+  TTree *tree_rec;
 
   vector <double> vCharge_x1, vCharge_y1;
   vector <double> vPosition_x1, vPosition_y1;
@@ -319,37 +319,41 @@ int BeamAnalysis::Analysis(Bool_t kPlot){
     double ds_lo; // downstream detector
     double ds_hi; // downstream detector
   }qdc;
+  
+  if(!kPlot){    
+    // Reconstructed Tree
+    tree_rec = new TTree("Rec","Rec"); 
+    //And Build  Reconstruction Branch
+    tree_rec->Branch("qdc",&qdc,"us_lo/D:us_hi:ds_lo:ds_hi");
 
-  TBranch* branch_qdc = tree_rec->Branch("qdc",&qdc,"us_lo/D:us_hi:ds_lo:ds_hi");
-
-  tree_rec->Branch("gem1.charge_x",&vCharge_x1);
-  tree_rec->Branch("gem1.charge_y",&vCharge_y1);
-  tree_rec->Branch("gem1.position_x",&vPosition_x1);
-  tree_rec->Branch("gem1.position_y",&vPosition_y1);
-  tree_rec->Branch("gem1.width_x",&vWidth_x1);
-  tree_rec->Branch("gem1.width_y",&vWidth_y1);
-  tree_rec->Branch("gem1.split_x",&vSplit_x1);
-  tree_rec->Branch("gem1.split_y",&vSplit_y1);
-  tree_rec->Branch("gem1.nHits",&nHits_1);
-  tree_rec->Branch("gem1.ped_mean",gem1_baseline_mean,
-		   "gem1.ped_mean[2]/D");
-  tree_rec->Branch("gem1.ped_rms",gem1_baseline_rms,
-		   "gem1.ped_rms[2]/D");
+    tree_rec->Branch("gem1.charge_x",&vCharge_x1);
+    tree_rec->Branch("gem1.charge_y",&vCharge_y1);
+    tree_rec->Branch("gem1.position_x",&vPosition_x1);
+    tree_rec->Branch("gem1.position_y",&vPosition_y1);
+    tree_rec->Branch("gem1.width_x",&vWidth_x1);
+    tree_rec->Branch("gem1.width_y",&vWidth_y1);
+    tree_rec->Branch("gem1.split_x",&vSplit_x1);
+    tree_rec->Branch("gem1.split_y",&vSplit_y1);
+    tree_rec->Branch("gem1.nHits",&nHits_1);
+    tree_rec->Branch("gem1.ped_mean",gem1_baseline_mean,
+		     "gem1.ped_mean[2]/D");
+    tree_rec->Branch("gem1.ped_rms",gem1_baseline_rms,
+		     "gem1.ped_rms[2]/D");
     
-  tree_rec->Branch("gem2.charge_x",&vCharge_x2);
-  tree_rec->Branch("gem2.charge_y",&vCharge_y2);
-  tree_rec->Branch("gem2.position_x",&vPosition_x2);
-  tree_rec->Branch("gem2.position_y",&vPosition_y2);
-  tree_rec->Branch("gem2.width_x",&vWidth_x2);
-  tree_rec->Branch("gem2.width_y",&vWidth_y2);
-  tree_rec->Branch("gem2.split_x",&vSplit_x2);
-  tree_rec->Branch("gem2.split_y",&vSplit_y2);
-  tree_rec->Branch("gem2.nHits",&nHits_2);
-  tree_rec->Branch("gem2.ped_mean",gem2_baseline_mean,
-		   "gem2.ped_mean[2]/D");
-  tree_rec->Branch("gem2.ped_rms",gem2_baseline_rms,
-		   "gem2.ped_rms[2]/D");
-
+    tree_rec->Branch("gem2.charge_x",&vCharge_x2);
+    tree_rec->Branch("gem2.charge_y",&vCharge_y2);
+    tree_rec->Branch("gem2.position_x",&vPosition_x2);
+    tree_rec->Branch("gem2.position_y",&vPosition_y2);
+    tree_rec->Branch("gem2.width_x",&vWidth_x2);
+    tree_rec->Branch("gem2.width_y",&vWidth_y2);
+    tree_rec->Branch("gem2.split_x",&vSplit_x2);
+    tree_rec->Branch("gem2.split_y",&vSplit_y2);
+    tree_rec->Branch("gem2.nHits",&nHits_2);
+    tree_rec->Branch("gem2.ped_mean",gem2_baseline_mean,
+		     "gem2.ped_mean[2]/D");
+    tree_rec->Branch("gem2.ped_rms",gem2_baseline_rms,
+		     "gem2.ped_rms[2]/D");
+  }
   //__________________________________________________________________________________
   // GEM Configuration Parameters
 
@@ -456,6 +460,7 @@ int BeamAnalysis::Analysis(Bool_t kPlot){
     bgTracker->AddPlane(bgPlane1);
     bgTracker->AddPlane(bgPlane2);
     // FIXME: a better way to do this
+
     vCharge_x1 = bgPlane1->GetChargeX();
     vCharge_y1 = bgPlane1->GetChargeY();
     vPosition_x1 = bgPlane1->GetPositionX();
@@ -496,19 +501,20 @@ int BeamAnalysis::Analysis(Bool_t kPlot){
     gem2_baseline_rms[1]
       = bgPlane2->GetProjectionY()->GetBaselineRMS();
 
-    if (!kPlot){
+    if(!kPlot){
       tree_rec->Fill();
     }
 
     if(kPlot){
       if(gem1_baseline_rms[1]>100 )
-	bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
-	// bgTracker->PlotResults(prefix_t,ievt);
+      // bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
+      bgTracker->PlotResults(prefix_t,ievt);
     }
 
   } // End Event loop
-
-  tree_rec->Write();
+  
+  if(!kPlot)
+    tree_rec->Write();
 
   return 0;
 }
@@ -538,12 +544,14 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
 
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
-  // TCanvas *c1  = new TCanvas("c1","c1",800,800);
-  // c1->cd();
-  // h_fit->Draw();
-  // f_gaus->Draw("same");
-  // c1->SaveAs(Form("plots/FitPed-%d-%d.png",iproj,strip));
-  // delete c1;
+  if(kPlot){
+    TCanvas *c1  = new TCanvas("c1","c1",800,800);
+    c1->cd();
+    h_fit->Draw();
+    f_gaus->Draw("same");
+    c1->SaveAs(Form("plots/FitPed-%d-%d.png",iproj,strip));
+    delete c1;
+  }
 }
 
 void BeamAnalysis::PrintSummary(){

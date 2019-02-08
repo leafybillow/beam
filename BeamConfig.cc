@@ -7,6 +7,7 @@ using namespace std;
 
 BeamConfig::BeamConfig(){
   run_num= -1;
+  kPlot = 0;
 }
 
 BeamConfig::~BeamConfig(){

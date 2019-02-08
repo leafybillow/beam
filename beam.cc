@@ -19,6 +19,7 @@ int main(int argc, char **argv){
   bool kRunTypeDefine = 0;
   bool kInputDefine = 0;
   bool kOutputDefine = 0;
+  bool kPlot = 0;
   bool kStatus  =1;
 
   if(argc ==1){
@@ -50,6 +51,9 @@ int main(int argc, char **argv){
     else if(strcmp(argv[iarg],"-o")==0){
       output_name = argv[++iarg];
       kOutputDefine=1;
+    }
+    else if(strcmp(argv[iarg],"-P")==0){
+      kPlot =1;
     }
     else{
       cerr<<__FILE__<<": "
@@ -85,6 +89,9 @@ int main(int argc, char **argv){
 
   if(kOutputDefine)
     fConfig->SetOutputName(output_name);
+
+  if(kPlot)
+    fConfig->SetPlotMode(kPlot);
   
   int anaType =0; // ana mode by default
   if(kRunTypeDefine){
@@ -94,8 +101,6 @@ int main(int argc, char **argv){
       anaType = 1;
     else if(strcmp(runType,"rms")==0)
       anaType = 2;
-    else if(strcmp(runType,"plot")==0)
-      anaType= 3;
     else{
       cerr<<"Error: unknown analysis type.  " <<runType << endl;
       cerr<<"See beam -h"<<endl;
@@ -124,16 +129,15 @@ void PrintUsage(){
   cout<< "Beam Test Analysis Software " << endl;
   cout<< "author : Tao Ye <tao.ye@stonybrook.edu> " << endl;
   cout << endl;  
-  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-h] " << endl;
+  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-P] [-h] " << endl;
   cout<<"Options:" << endl;
   cout<< "\t" << "-h : "
       <<"Print help info " << endl;
   cout<< "\t" << "-t <analysis_type>: "
-      <<" Optional, available options: ped, rms, ana, plot. " << endl;
-  cout << "\t -- ana: Default mode, reconstruction and  tracking analysis" << endl;
-  cout << "\t -- ped: Generate a pedestal DB file for specific run" << endl;
-  cout << "\t -- rms: Generate a pedestal RMS table file" << endl;
-  cout << "\t -- plot: output plots only, useful fo debug " << endl;
+      <<" Optional, available options: ped, rms, ana. " << endl;
+  cout << "\t \t : Default mode, reconstruction and  tracking analysis" << endl;
+  cout << "\t \t : Generate a pedestal DB file for specific run" << endl;
+  cout << "\t \t : Generate a pedestal RMS table file" << endl;
   
   cout<< "\t" << "-c <config_file>: "
       <<"optional, use beam.config by default " << endl;
@@ -143,5 +147,7 @@ void PrintUsage(){
       << "mandatory, if <run_num> is not specfied " << endl;
   cout<< "\t" << "-o <output_filename>: "
       <<"optional, specify output rootfile/plot name " << endl;
+  cout<< "\t" << "-P: "
+      <<" output plots ONLY, no rootfile will be created. " << endl;
   cout<< endl;
 }
