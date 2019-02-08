@@ -278,6 +278,12 @@ int BeamAnalysis::CalculateRMS(){
     
     fprintf(header_file,"};\n");
   }
+  
+  //Write  objects
+  for(int iproj=0; iproj<nproj; iproj++){
+    hped_mean[iproj]->Write();
+    hped_rms[iproj]->Write();
+  }
 
   printf("RMS Calculation is Done ! \n");
 
@@ -506,7 +512,6 @@ int BeamAnalysis::Analysis(){
     }
 
     if(kPlot){
-      if(gem1_baseline_rms[1]>100 )
       // bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
       bgTracker->PlotResults(prefix_t,ievt);
     }
@@ -526,7 +531,7 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   Int_t bin_max = h_fit->GetMaximumBin();
   Double_t bincenter = h_fit->GetBinCenter(bin_max);
   Double_t bin_content_max = h_fit->GetBinContent(bin_max);
-  Double_t rms = 100.0; // An initial guess
+  Double_t rms = 50.0; // An initial guess
 
   Double_t par[3]; 
   par[0] = bin_content_max;
