@@ -27,9 +27,6 @@ void BeamConfig::Config(){
   case 2:
     output_suffix="_rms.root";
     break;
-  case 3:
-    output_suffix="_plots.pdf";
-    break;
   }
     
   if(run_num!=-1){
