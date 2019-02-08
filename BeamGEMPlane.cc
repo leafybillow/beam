@@ -90,12 +90,12 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   c1->Divide(1,2);
 
   c1->cd(1);
-  bgProjY->GetTH1D()->Draw();
+  bgProjY->GetHistogram()->Draw();
 
   TVirtualPad *c2 = c1->cd(2);
   c2->Divide(2,1);
   c2->cd(1);
-  bgProjX->GetTH1D()->Draw();
+  bgProjX->GetHistogram()->Draw();
   
   c1->SaveAs(Form("%s-%s-evt-%d.png",
 		  runName.Data(),

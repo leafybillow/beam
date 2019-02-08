@@ -16,10 +16,11 @@ Int_t analysis_ped(TString filename="test_raw.root", Bool_t isDebug = 0){
 
   TString output_filename = prefix_t + "_ped.root";
   TFile* rf_ped = TFile::Open("rootfiles/"+output_filename,"RECREATE");
+  
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
   // Database for GEM
   TString db_filename = "DBfiles/db_sbs.gems.dat_" + prefix_t;
-  gSystem->Exec("cp DBfiles/db_sbs.gems.dat_noped "+db_filename);
+  gSystem->Exec("cp DBfiles/db_sbs.gems.dat_twoMPD_noped "+db_filename);
   FILE *db_file = fopen(db_filename.Data(),"a");
   gSystem->Exec(Form("ln -sf %s db_sbs.gems.dat",db_filename.Data()));
   

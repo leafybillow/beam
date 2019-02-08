@@ -8,6 +8,7 @@ class BeamGEMStrip: public TObject{
   int  fT_max; //  Sample index with peak value 
   double fADCsum; // Integral with pedestal and common mode corrections
 
+  bool kZeroSuppression; // if 1, it is suppressed
   // following variables are given from fittig parameters
   // Function : CR-RC shaping 
   double fAmpl_fit; // amplitude calculated
@@ -17,7 +18,9 @@ class BeamGEMStrip: public TObject{
 
   // Identification
   int id_strip;  // strip id: the physical position in readout plane
-
+  int id_projection;
+  int id_gem;
+  
   TH1D *h_fit;
 
   // Called by Init
@@ -32,23 +35,24 @@ class BeamGEMStrip: public TObject{
   void Init();
 
  public: 
-  BeamGEMStrip(double* d, int id);
+  BeamGEMStrip(double* data, int myID);
   ~BeamGEMStrip();
 
   inline int GetStripID() const {return id_strip;};
   inline double GetRawAmplitude() const { return fAmpl_raw;};
   inline double GetADCsum() const { return fADCsum;};
   inline int GetTMax() const { return fT_max;};
-  
   inline double GetTau() const { return fTau;};
   inline double GetTStart() const { return fT_start;};
   inline double GetFitAmplitude() const { return fAmpl_fit;};
+  inline double GetZSStatus() const {return kZeroSuppression;};
   
   double GetAmplitude();
 
   // Called by Users
   void Process();
-  void PlotFitResult(int ievt,int igem, int iapv, int ich);
-
+  void PlotStrip(TString runName,int ievt,int iproj, int istrip); // FIXME: a better way
+  void SetZeroSuppression(bool zsflag);
+  
   ClassDef(BeamGEMStrip,0);
 };

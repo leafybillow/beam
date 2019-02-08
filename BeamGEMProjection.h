@@ -68,9 +68,21 @@ class BeamGEMProjection: public TObject{
   int nHits;
   int nClusters;
   TString strProjName; // e.g. x1, x2 , y1, y2
-  TH1D* h_proj;
+  TH1D* h_proj; // zero-suppressed histogram for calculation,
+  TH1D* h_raw;  // histogram for plotting results
+  // use histogram for quick check
+  // for fast performance, a std container is prefered
+  vector<double> vStat ; // vector to collect all samples
+  vector<double> vBaseline; // vector to collect baseline samples
+
+  double baseline_mean;
+  double baseline_rms;
+  double overall_mean;
+  double overall_rms;
   
   void Init();
+  double CalculateMean(vector<double> );
+  double CalculateRMS(vector<double> );
   // Called by Process
   // Coarse Process for Clusters
   int CoarseProcess();
@@ -104,7 +116,12 @@ class BeamGEMProjection: public TObject{
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};
-  inline TH1D* GetTH1D() const {return h_proj;};
+  inline TH1D* GetHistogram() const {return h_raw;};
+  
+  inline double GetBaselineMean() const {return baseline_mean;};
+  inline double GetBaselineRMS() const {return baseline_rms;};
+  inline double GetOverallMean() const {return overall_mean;};
+  inline double GetOverallRMS() const {return overall_rms;};
 
   // Called by Users
   int Process();

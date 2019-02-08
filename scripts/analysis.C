@@ -1,7 +1,7 @@
 #include "analysis_rms.h"
 #define THRESHOLD 3.0; // threshold for signal, e.g. 3 means 3*sigma 
 
-Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSuppression=1){
+Int_t analysis(TString filename="test.root", Bool_t isDebug = 0){
   
   gSystem->Load("libbeam.so");
 
@@ -14,7 +14,7 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
   Int_t length_t = last_t - first_t;
   TString prefix_t = filename(first_t,length_t);
 
-  if(isDebug!=1){
+  if(!isDebug){
     TString output_filename = prefix_t + "_analyzed.root";
     TFile* rf_rec = TFile::Open("rootfiles/"+output_filename,"RECREATE");
     cout << "ROOTFile " << output_filename << " is recreated. " << endl;
@@ -37,6 +37,12 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
   vector <double> vWidth_x2, vWidth_y2;
   vector <int> vSplit_x2, vSplit_y2;
 
+  double gem1_baseline_rms[2];
+  double gem1_baseline_mean[2];
+  
+  double gem2_baseline_rms[2];
+  double gem2_baseline_mean[2];  // [0]: projX; [1]:projY
+  
   Int_t nHits_1, nHits_2;
 
   struct QDC{
@@ -57,7 +63,11 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
   tree_rec->Branch("gem1.split_x",&vSplit_x1);
   tree_rec->Branch("gem1.split_y",&vSplit_y1);
   tree_rec->Branch("gem1.nHits",&nHits_1);
-
+  tree_rec->Branch("gem1.ped_mean",gem1_baseline_mean,
+		   "gem1.ped_mean[2]/D");
+  tree_rec->Branch("gem1.ped_rms",gem1_baseline_rms,
+		   "gem1.ped_rms[2]/D");
+    
   tree_rec->Branch("gem2.charge_x",&vCharge_x2);
   tree_rec->Branch("gem2.charge_y",&vCharge_y2);
   tree_rec->Branch("gem2.position_x",&vPosition_x2);
@@ -67,6 +77,10 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
   tree_rec->Branch("gem2.split_x",&vSplit_x2);
   tree_rec->Branch("gem2.split_y",&vSplit_y2);
   tree_rec->Branch("gem2.nHits",&nHits_2);
+  tree_rec->Branch("gem2.ped_mean",gem2_baseline_mean,
+		   "gem2.ped_mean[2]/D");
+  tree_rec->Branch("gem2.ped_rms",gem2_baseline_rms,
+		   "gem2.ped_rms[2]/D");
 
   //__________________________________________________________________________________
   // GEM Configuration Parameters
@@ -113,7 +127,7 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
-
+  Bool_t kZeroSuppression = 1; // Suppressed by defaultp
   BeamGEMProjection* bgProjection[4];
 
   Int_t nentries = tree_raw->GetEntries();
@@ -144,15 +158,21 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
 	} 
 	Int_t myStripID = (Int_t)bgData[iProj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
-	// effectively zero suppression
-	if(!zeroSuppression || bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich]){ 
-	  bgStrip->Process();
-	  bgProjection[iProj]->AddStrip(bgStrip);
-	}
+	// Zero suppression
+	
+	if(bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich])
+	  kZeroSuppression = 0; // Not Suppressed
+	else
+	  kZeroSuppression = 1;
+	
+	bgStrip->SetZeroSuppression(kZeroSuppression);
+	if(isDebug)
+	  bgStrip->PlotStrip(prefix_t,ievt,iProj,myStripID);
+	// bgStrip->Process(); // FIXME: Not implemented now
+	bgProjection[iProj]->AddStrip(bgStrip);
+
       } // End channel loop
-      if(!isDebug){
-	bgProjection[iProj]->Process();
-      }
+      bgProjection[iProj]->Process();
     } // End Projection Loop
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     BeamGEMPlane* bgPlane1 = new BeamGEMPlane("gem1");
@@ -162,10 +182,8 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
     bgPlane2->AddProjectionX(bgProjection[2]);
     bgPlane2->AddProjectionY(bgProjection[3]);
 
-    if(!isDebug){
-      bgPlane1->Process();
-      bgPlane2->Process();
-    }
+    bgPlane1->Process();
+    bgPlane2->Process();
     
     bgTracker->AddPlane(bgPlane1);
     bgTracker->AddPlane(bgPlane2);
@@ -190,13 +208,34 @@ Int_t analysis(TString filename="test.root", Bool_t isDebug = 0, Bool_t zeroSupp
 
     nHits_2 = bgPlane2->GetNHits();
 
-    
+    gem1_baseline_mean[0]
+      = bgPlane1->GetProjectionX()->GetBaselineMean();
+    gem1_baseline_mean[1]
+      = bgPlane1->GetProjectionY()->GetBaselineMean();
+
+    gem1_baseline_rms[0]
+      = bgPlane1->GetProjectionX()->GetBaselineRMS();
+    gem1_baseline_rms[1]
+      = bgPlane1->GetProjectionY()->GetBaselineRMS();
+
+    gem2_baseline_mean[0]
+      = bgPlane2->GetProjectionX()->GetBaselineMean();
+    gem2_baseline_mean[1]
+      = bgPlane2->GetProjectionY()->GetBaselineMean();
+
+    gem2_baseline_rms[0]
+      = bgPlane2->GetProjectionX()->GetBaselineRMS();
+    gem2_baseline_rms[1]
+      = bgPlane2->GetProjectionY()->GetBaselineRMS();
+
     if (!isDebug){
       tree_rec->Fill();
     }
 
     if(isDebug){
-	bgTracker->PlotResults(prefix_t,ievt);
+      if(gem1_baseline_rms[1]>100 )
+	bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
+	// bgTracker->PlotResults(prefix_t,ievt);
     }
 
   } // End Event loop

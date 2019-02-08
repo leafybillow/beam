@@ -2,7 +2,10 @@
 #include "BeamGEMStrip.h"
 #include <iostream>
 #include "TCanvas.h"
+#include "TText.h"
+
 ClassImp(BeamGEMProjection);
+
 #define WIDTH_CUT 1 ; // Rejecting single active channel 
 #define THRESHOLD_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
 #define SPLIT_FRAC 0.1 ;
@@ -12,7 +15,9 @@ BeamGEMProjection::BeamGEMProjection()
   :vBGStrips(),vHits(),vClusters(),
    nHits(-1),nClusters(-1),
    strProjName(),
-   h_proj()
+   h_proj(),h_raw(),
+   vStat(),vBaseline(),
+   baseline_mean(0),baseline_rms(0),overall_mean(0),overall_rms(0)
 {
 }
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
@@ -33,7 +38,14 @@ void BeamGEMProjection::Init(){
 
   h_proj = new TH1D("",Form("Projection on %s",strProjName.Data()),
 		    nStrips,-length/2.0,length/2.0);
+  
+  h_raw = new TH1D("",Form("Projection on %s",strProjName.Data()),
+		    nStrips,-length/2.0,length/2.0);
+  h_raw->GetYaxis()->SetTitle("Charge(ADC counts)");
+  h_raw->GetXaxis()->SetTitle("Position(mm)");
+  
 }
+
 int BeamGEMProjection::Process(){
 
   int status = CoarseProcess();
@@ -43,7 +55,15 @@ int BeamGEMProjection::Process(){
   return status;
 }
 int BeamGEMProjection::CoarseProcess(){
+  // Compute baseline RMS and mean;
+  baseline_mean = CalculateMean(vBaseline);
+  baseline_rms = CalculateRMS(vBaseline);
+  baseline_rms = sqrt( pow(baseline_rms,2) - pow(baseline_mean,2));
 
+  overall_mean = CalculateMean(vStat);
+  overall_rms = CalculateRMS(vStat);
+  overall_rms = sqrt(pow(overall_rms,2) - pow(overall_mean,2));
+  
   if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;//Failed
   else{
@@ -76,14 +96,14 @@ int BeamGEMProjection::CoarseProcess(){
     }
     
     if(nClusters==0)
-      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
+      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
 			     strProjName.Data(),
 			     nClusters));
     else if(nClusters>0)
-      h_proj->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, Main Split level %d",
+      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, %d Hit(s) Identified",
 			     strProjName.Data(),
 			     nClusters,
-			     vClusters[0].fSplit));
+			     nHits));
     return 0; // OK
   } // Pass CheckNStrips()
 }
@@ -231,18 +251,36 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 
   double ampl = bgGEMStrip->GetAmplitude();
   int strip_id = bgGEMStrip->GetStripID();
-  h_proj->SetBinContent(strip_id,ampl);
+  bool zsflag = bgGEMStrip->GetZSStatus();
+  
+  if(!zsflag){ // if not zero suppressed
+    h_proj->SetBinContent(strip_id,ampl);
+  }
+  
+  if(zsflag)
+    vBaseline.push_back(ampl);
+  
+  h_raw->SetBinContent(strip_id,ampl);
+  vStat.push_back(ampl);
 
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
   TCanvas *c1 = new TCanvas("","c1", 800,400);
   c1->cd();
-  h_proj->Draw();
-  h_proj->GetYaxis()->SetTitle("Charge(ADC counts)");
-  h_proj->GetXaxis()->SetTitle("Position(mm)");
+  h_raw->Draw();
 
-  c1->SaveAs( Form("%s-%s-evt%d.pdf",runName.Data(),strProjName.Data(), ievt) );
+  TString title = h_raw->GetTitle();
+  title = title+Form(", Noise RMS %d",(int)baseline_rms);
+  h_raw->SetTitle(title);
+  
+  TText *text= new TText(0.0,0.95,
+			 Form("%s-%s-evt-%d",runName.Data(),strProjName.Data(),ievt));
+  text->SetNDC();
+  text->Draw("same");
+
+  
+  c1->SaveAs( Form("%s-%s-evt%d.png",runName.Data(),strProjName.Data(), ievt) );
 
   delete c1;
 }
@@ -382,9 +420,9 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 	      << std::endl;
   }
   
-  TString title = h_proj->GetTitle();
+  TString title = h_raw->GetTitle();
   TString append = Form(", %d hit(s) confirmed", nHits);
-  h_proj->SetTitle(title+append);
+  h_raw->SetTitle(title+append);
 
 }
 
@@ -437,3 +475,41 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
   else
     return 0;  // No splitting found 
 }
+
+
+double BeamGEMProjection::CalculateMean(vector<double> aVector){
+  double sum = 0;
+  int counts = 0;
+  vector<double>::iterator iter = aVector.begin();
+  while(iter!=aVector.end()){
+    sum += *iter;
+    counts++;
+    iter++;
+  }
+  if(counts!=0){
+    double mean = sum /counts;
+    return mean;
+  }
+  else
+    return 0;
+}
+
+double BeamGEMProjection::CalculateRMS(vector<double> aVector){
+  double sum = 0;
+  int counts = 0;
+  vector<double>::iterator iter = aVector.begin();
+  while(iter!=aVector.end()){
+    double buff = *iter;
+    sum += (buff*buff);
+    counts++;
+    iter++;
+  }
+  if(counts!=0){
+    double rms = sqrt(sum /counts);
+    return rms;
+  }
+  else
+    return 0;
+}
+
+

@@ -8,4 +8,7 @@
 #pragma link C++ class BeamGEMStrip+;
 #pragma link C++ class BeamGEMProjection+;
 #pragma link C++ class BeamGEMData+;
+
+#pragma link C++ class BeamConfig+;
+#pragma link C++ class BeamAnalysis+;
 #endif

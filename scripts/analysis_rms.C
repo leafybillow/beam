@@ -4,6 +4,8 @@
 
 Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
 
+  gStyle->SetOptFit(1);
+  
   TFile* rf_raw = TFile::Open(filename.Data());
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   cout << "ROOTFile " << filename << " is opened. " << endl;
@@ -16,7 +18,7 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   TFile* rf_rms = TFile::Open("rootfiles/"+output_filename,"RECREATE");
   cout << "ROOTFile " << output_filename << " is recreated. " << endl;
 
-  // Header for GEM
+  // Header for GEM RMS
   TString header_filename = Form("DBfiles/analysis_rms.h_%s",prefix_t.Data());
   FILE *header_file = fopen(header_filename.Data(),"w");
   
@@ -65,7 +67,7 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
   Double_t ped_rms; // averaged by sqrt(6)
   
   TString draw_text, hist_name;
-  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e3,-5e3,5e3);
+  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",5e2,-2e3,2e3);
 
   cout << "Calculating rms... Be patient" << endl;
 
@@ -80,7 +82,11 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
 		       strProj[iproj].Data(),ich,
 		       strProj[iproj].Data(),ich);
       tree_raw->Draw(Form("%s >> h_fit", draw_text.Data()),"","goff");
-      PedestalFit(h_fit, ped_mean, ped_rms);
+      h_fit->SetTitle(Form("Corrected Pedestal, %s, strip %d",
+			   strProj[iproj].Data(), ich));
+      
+      PedestalFit(h_fit, ped_mean, ped_rms, iproj,ich);
+      
       if(ich%16==0)
 	fprintf(header_file,"\n");
       fprintf(header_file,"%.2f",ped_rms);
@@ -111,7 +117,8 @@ Int_t analysis_rms(TString filename="test.root", Bool_t isDebug = 0){
 }
 
 // User Define Functions
-void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
+void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma,
+		 Int_t iproj, Int_t ich){
 
   Int_t bin_max = h_ped->GetMaximumBin();
   Double_t bincenter = h_ped->GetBinCenter(bin_max);
@@ -123,14 +130,21 @@ void PedestalFit(TH1D *h_ped, Double_t &mean, Double_t &sigma){
   par[1] = bincenter;
   par[2] = rms; 
 
-  TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
+  TCanvas *c1 = new TCanvas("c1","c1",600,600);
+  c1->cd();
+  h_ped->Draw();
+  
+  TF1 *f_gaus = new TF1("f_gaus","gaus",-5e4,5e4);
   f_gaus->SetParameters(par);
   h_ped->Fit("f_gaus","QNR","",bincenter-rms,bincenter+rms);
 
   mean = f_gaus->GetParameter(1);
   sigma  = f_gaus->GetParameter(2);
-  h_ped->Fit("f_gaus","QNR","",mean-sigma,mean+sigma);
+  h_ped->Fit("f_gaus","QR","",mean-2*sigma,mean+2*sigma);
 
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
+
+  // c1->SaveAs(Form("%d_%d.png",iproj,ich));
+  delete c1;
 }
