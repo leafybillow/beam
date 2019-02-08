@@ -1,9 +1,10 @@
 
 # Beam Test Analysis Software 
-author : Tao Ye <tao.ye@stonybrook.edu> 
+author : Tao Ye
+       <tao.ye@stonybrook.edu> 
 
 ## Usage:
-### beam [-t] [-r] [-f] [-c] [-o] [-h] 
+ beam [-t] [-r] [-f] [-c] [-o] [-h] 
 ### Options:
 -	-h : Print help info 
 -	-t <analysis_type>:  Optional, available options: ped, rms, ana, plot. 
