@@ -5,6 +5,7 @@
 #include "BeamGEMTracker.h"
 #include "BeamAnalysis.h"
 #include "BeamConfig.h"
+#include "BeamParameters.h"
 
 #include "table_rms.h"
 
@@ -15,8 +16,6 @@
 #include <iostream>
 #include <fstream>
 
-#define THRESHOLD 3.0
-
 using namespace std;
 
 ClassImp(BeamAnalysis);
@@ -25,7 +24,6 @@ BeamAnalysis::BeamAnalysis(BeamConfig *beamConfig){
   fConfig = beamConfig;
 
   kPlot=fConfig->GetPlotMode();
-  
   rf_raw = TFile::Open(fConfig->GetInputName());
   TString input_filename = rf_raw->GetName(); 
   cout << "--Input file " << input_filename << " is opened. " << endl;
@@ -439,7 +437,7 @@ int BeamAnalysis::Analysis(){
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
 	// Zero suppression
 	
-	if(bgStrip->GetADCsum()>THRESHOLD*sqrt(6)*rms[iProj][ich])
+	if(bgStrip->GetADCsum()>zs_threshold*sqrt(6)*rms[iProj][ich])
 	  kZeroSuppression = 0; // Not Suppressed
 	else
 	  kZeroSuppression = 1;
@@ -513,7 +511,8 @@ int BeamAnalysis::Analysis(){
 
     if(kPlot){
       // bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
-      bgTracker->PlotResults(prefix_t,ievt);
+      if(nHits_1==1 && nHits_2==1 && vWidth_y1[0]<10)
+	bgTracker->PlotResults(prefix_t,ievt);
     }
 
   } // End Event loop

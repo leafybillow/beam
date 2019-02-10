@@ -1,5 +1,6 @@
 #include "BeamConfig.h"
 #include "BeamAnalysis.h"
+#include "BeamParameters.h"
 
 #include <iostream>
 

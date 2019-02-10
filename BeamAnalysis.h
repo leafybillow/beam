@@ -10,6 +10,9 @@ class BeamAnalysis{
   TFile *rf_raw;
   TFile *rf_output;
   
+  // Tuning Parameters
+  double fZSThreshold;
+  
   BeamConfig *fConfig;
 
   Bool_t kPlot;
@@ -20,8 +23,8 @@ class BeamAnalysis{
 
   void GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
 		   int iproj, int strip);
-  
- public:
+
+public:
   BeamAnalysis(BeamConfig *config);
   virtual ~BeamAnalysis();
 

@@ -1,14 +1,14 @@
 #include "BeamGEMProjection.h"
 #include "BeamGEMStrip.h"
-#include <iostream>
+#include "BeamParameters.h"
+
 #include "TCanvas.h"
 #include "TText.h"
 
+#include <iostream>
+
 ClassImp(BeamGEMProjection);
 
-#define WIDTH_CUT 1 ; // Rejecting single active channel 
-#define THRESHOLD_WIDTH 3 ; // Threshold to examine oversize cluster, unit: number of strip
-#define SPLIT_FRAC 0.1 ;
 #define PITCH 0.4 ; // unit mm,  = 400 um
 
 BeamGEMProjection::BeamGEMProjection()
@@ -124,7 +124,6 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
 
   vector< pair<int,int> > vecRange;
   double bin_content;
-  int width_cut = WIDTH_CUT;
   bool isLock = 0;
   double threshold =0; // Assuming ZeroSuppression has been done in the analysis script
   
@@ -434,8 +433,8 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
   int end = prRange.second;
   int width = prRange.second - prRange.first;
 
-  int kMaxSize = THRESHOLD_WIDTH;
-  double frac = SPLIT_FRAC;
+  int kMaxSize = width_threshold;
+  double frac = split_frac; 
   double frac_up = 1.0 + frac;
   double frac_down = 1.0 -frac;
 
@@ -513,3 +512,7 @@ double BeamGEMProjection::CalculateRMS(vector<double> aVector){
 }
 
 
+int BeamGEMProjection::PostProcess(){
+  // FIXME: to-do
+  return 0;
+}

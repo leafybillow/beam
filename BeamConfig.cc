@@ -5,6 +5,12 @@
 ClassImp(BeamConfig);
 using namespace std;
 
+// if not define, these parameters will be default
+double zs_threshold = 3.0;
+double width_cut=1.0;
+double width_threshold = 3.0; 
+double split_frac=0.1;
+
 BeamConfig::BeamConfig(){
   run_num= -1;
   kPlot = 0;
@@ -78,9 +84,23 @@ int BeamConfig::ParseFile(){
       continue;
     }
     if(vecStr[0].Contains("zs_threshold")){
-      fZSThreshold = vecStr[1].Atof();
+      zs_threshold = vecStr[1].Atof();
+      fZSThreshold = zs_threshold;
       continue;
     }
+    if(vecStr[0].Contains("width_cut")){
+      width_cut = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("width_threshold")){
+      width_threshold = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("split_frac")){
+      split_frac = vecStr[1].Atof();
+      continue;
+    }
+
     if(vecStr[0].Contains("n_gem")){
       n_gem = vecStr[1].Atoi();
       continue;
@@ -164,7 +184,13 @@ void BeamConfig::PrintSummary(){
     it_det++;
   }
   cout << endl;
-  
+  cout << "-- Analysis Parameters" << endl; 
   cout << "--"
-       << "Zero Suppression threshold: "  << fZSThreshold << endl;
+       << "Zero Suppression threshold: "  << zs_threshold << endl;
+  cout << "--"
+       << "Reject cluster not greater than: "  << width_cut << endl;
+  cout << "--"
+       << "Oversize Cluster threshold: "  << width_threshold << endl;
+  cout << "--"
+       << "Spliting Fraction threshold: "  << split_frac << endl;
 }

@@ -1,5 +1,6 @@
-#include "TString.h"
+#include "BeamParameters.h"
 
+#include "TString.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
