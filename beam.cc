@@ -21,47 +21,54 @@ int main(int argc, char **argv){
   bool kInputDefine = 0;
   bool kOutputDefine = 0;
   bool kPlot = 0;
-  bool kStatus  =1;
+  bool kStatus  =0;
 
-  if(argc ==1){
+  if(argc==1){
     PrintUsage();
     return 0;
   }
-
-  for(int iarg=1;iarg<argc;iarg++){
-    if(strcmp(argv[iarg],"-h")==0){
-      PrintUsage();
-      return 0;
-    }
-    if(strcmp(argv[iarg],"-r")==0){
-      run_num = atoi(argv[++iarg]);
-      kRunNumDefine = 1;
-    }
-    else if(strcmp(argv[iarg],"-c")==0){
-      configName = argv[++iarg];
-      kConfigNameDefine =1;
-    }
-    else if(strcmp(argv[iarg],"-t")==0){
-      runType = argv[++iarg];
-      kRunTypeDefine =1;
-    }
-    else if(strcmp(argv[iarg],"-f")==0){
-      input_name = argv[++iarg];
-      kInputDefine=1;
-    }
-    else if(strcmp(argv[iarg],"-o")==0){
-      output_name = argv[++iarg];
-      kOutputDefine=1;
-    }
-    else if(strcmp(argv[iarg],"-P")==0){
-      kPlot =1;
-    }
-    else{
+    
+  int opt;
+  while( (opt=getopt(argc,argv,":c:r:t:f:o:hP"))!=-1){
+    switch(opt){
+      
+    case ':':
+      cout << argv[optind-1]<< " requires value. " << endl;
+      kStatus = 1;
+      break;
+    case '?':
       cerr<<__FILE__<<": "
-	  <<__FUNCTION__<<": "
-	  <<"unknown flag: " << argv[iarg] <<endl;
+  	  <<__FUNCTION__<<": "
+  	  <<"unknown arguments: " << optopt <<endl;
       cerr<< "See beam -h " << endl;
-      kStatus =0;
+      kStatus = 1;
+      break;
+    case 'h':
+      PrintUsage();
+      kStatus = 1;
+      break;
+    case 'r':
+      run_num = atoi(optarg);
+      kRunNumDefine = 1;
+      break;
+    case 'c':
+      configName=optarg;
+      kConfigNameDefine=1;
+      break;
+    case 't':
+      runType=optarg;
+      kRunTypeDefine=1;
+      break;
+    case 'f':
+      input_name=optarg;
+      kInputDefine=1;
+      break;
+    case 'o':
+      output_name=optarg;
+      kOutputDefine=1;
+      break;
+    case 'P':
+      kPlot =1;
       break;
     }
   }
@@ -75,11 +82,11 @@ int main(int argc, char **argv){
 
   if(!kRunNumDefine && !kInputDefine){
     cerr<< "Fatal Error: No input data specified. See beam -h."<<endl;
-    kStatus=0;
+    kStatus=1;
   }
   else if(kRunNumDefine && kInputDefine){
     cerr<< "Fatal Error: Too many inputs defined. See beam -h."<<endl;
-    kStatus=0;
+    kStatus=1;
   }
   else if(kRunNumDefine){
     fConfig->SetRunNumber(run_num);
@@ -105,23 +112,22 @@ int main(int argc, char **argv){
     else{
       cerr<<"Error: unknown analysis type.  " <<runType << endl;
       cerr<<"See beam -h"<<endl;
-      kStatus=0;
+      kStatus=1;
     }
   }
   
-  if (kStatus)
+  if(kStatus==0)
     fConfig->SetAnalysisType(anaType);
   
-  if(kStatus){
+  if(kStatus==0){
     fConfig->Config();
     BeamAnalysis *bAnalysis = new BeamAnalysis(fConfig);
     bAnalysis->Process();
-    return 0;
   }
   else{
     cerr<< "Failed to configure analysis. Aborted." <<endl;
-    return 1;
   }
+  return kStatus;
 }
 
 

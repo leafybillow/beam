@@ -4,7 +4,9 @@ Author : Tao Ye
        <tao.ye@stonybrook.edu> 
 
 ## Usage:
- beam [-t] [-r] [-f] [-c] [-o] [-P] [-h] 
+ beam [OPTIONS] -r <run_number>
+ 
+ beam [OPTIONS] -f <input_file>
 
 ### Options:
 
@@ -22,6 +24,7 @@ Author : Tao Ye
 ### Examples
 ```
 	beam -r 411
+	beam -f rootfiles/run_411.root
 	beam -r 411 -c user.conf	
 	beam -t ped -r 411
 ```
