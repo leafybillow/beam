@@ -56,8 +56,7 @@ int BeamAnalysis::Process(){
   }
     
   rf_raw->Close();
-  if(!kPlot)
-    rf_output->Close();
+  rf_output->Close();
   
   return 0;
 }
@@ -511,8 +510,7 @@ int BeamAnalysis::Analysis(){
 
     if(kPlot){
       // bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
-      if(nHits_1==1 && nHits_2==1 && vWidth_y1[0]<10)
-	bgTracker->PlotResults(prefix_t,ievt);
+      bgTracker->PlotResults(prefix_t,ievt);
     }
 
   } // End Event loop
