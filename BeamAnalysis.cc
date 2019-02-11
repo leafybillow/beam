@@ -24,7 +24,9 @@ BeamAnalysis::BeamAnalysis(BeamConfig *beamConfig){
   fConfig = beamConfig;
 
   kPlot=fConfig->GetPlotMode();
+  n_gem = fConfig->GetNGEMs();
   rf_raw = TFile::Open(fConfig->GetInputName());
+
   TString input_filename = rf_raw->GetName(); 
   cout << "--Input file " << input_filename << " is opened. " << endl;
   if(!kPlot){
@@ -75,7 +77,6 @@ int BeamAnalysis::CalculatePed(){
   TString prefix_t = input_name(first_t,length_t);
 
   TString db_filename = Form("DBfiles/db_sbs.gems.dat_%s",prefix_t.Data());
-  
   // Make a copy of template
   std::ifstream srce( db_template.Data(), std::ios::binary ) ;
   std::ofstream dest( db_filename.Data(), std::ios::binary ) ;
@@ -92,22 +93,25 @@ int BeamAnalysis::CalculatePed(){
   fprintf(db_file,"# Pedestal Database for SLAC Beam Test %s",prefix_t.Data());
   
   // * Pre-Analysis GEM : Get Pedestal From Gaussian Fit
-
-  const int nproj = 4;
+  const int nproj = 2*n_gem;
+  // Summary histogram
   TH1D* hped_mean[nproj];
   TH1D* hped_rms[nproj];
 
-  TString strProj[nproj]={"x1","y1","x2","y2"};
-  Int_t sizeArray[nproj]={256, 512, 256, 512}; 
+  TString strProj[nproj];
+  Int_t sizeArray[nproj];
 
-  // Summary histogram
   for(int iproj=0; iproj<nproj;iproj++){
-      hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
-				  Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
-				  sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
-      hped_rms[iproj] = new TH1D(Form("hped_rms_%d",iproj),
-				 Form("Pedestal RMS vs strip, projection %s",strProj[iproj].Data()),
-				 sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
+    sizeArray[iproj] = ( (iproj%2)==0 ? 256 : 512);
+    TString strDim = ( (iproj%2)==0 ? "x" : "y");
+    strProj[iproj] = Form("%s%d",strDim.Data(), (iproj/2 +1));
+    
+    hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
+				Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
+				sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
+    hped_rms[iproj] = new TH1D(Form("hped_rms_%d",iproj),
+			       Form("Pedestal RMS vs strip, projection %s",strProj[iproj].Data()),
+			       sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
   }
 
   Double_t ped_mean; //averaged by 6
@@ -117,21 +121,16 @@ int BeamAnalysis::CalculatePed(){
   TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e3,0.0,1e4);
   
   // Retrieve Channel Mapping from rootfiles ........
-  double gem1_xstrip_id[256];
-  double gem1_ystrip_id[512];
-  double gem2_xstrip_id[256];
-  double gem2_ystrip_id[512];
-  double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
-			      gem2_xstrip_id, gem2_ystrip_id };
-
   // strip_id type should be an integer, but ....it was output as a float
   // Hardcoded by hand ,may need to think of a better solution to do this.
   // Anyway, I need pointers to load strip map
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
-  tree_raw->SetBranchAddress("sbs.gems.x1.strip",gem1_xstrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.y1.strip",gem1_ystrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.x2.strip",gem2_xstrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.y2.strip",gem2_ystrip_id);
+  double* strip_id[nproj];
+  for(int iproj=0;iproj<nproj;iproj++){
+    strip_id[iproj] = new double[ sizeArray[iproj] ];
+    TString branch_name = Form("sbs.gems.%s.strip",strProj[iproj].Data());
+    tree_raw->SetBranchAddress(branch_name,strip_id[iproj]);
+  }
   
   tree_raw->GetEntry(1); // in order to load strip map to these array
   
@@ -201,15 +200,19 @@ int BeamAnalysis::CalculateRMS(){
   fprintf(header_file,"\n");
   fprintf(header_file," //// RMS arrays run %s", prefix_t.Data());
   
-  const int nproj = 4;
+  const int nproj = 2*n_gem;
   TH1D* hped_mean[nproj];
   TH1D* hped_rms[nproj];
 
-  TString strProj[nproj]={"x1","y1","x2","y2"};
-  Int_t sizeArray[nproj]={256, 512, 256, 512}; 
+  TString strProj[nproj];
+  Int_t sizeArray[nproj];
 
 
   for(int iproj=0; iproj<nproj;iproj++){
+    sizeArray[iproj] = ( (iproj%2)==0 ? 256 : 512);
+    TString strDim = ( (iproj%2)==0 ? "x" : "y");
+    strProj[iproj] = Form("%s%d",strDim.Data(), (iproj/2 +1));
+
     int nbins =sizeArray[iproj];
     hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
 				Form("Pedestal Mean vs strip,  %s",strProj[iproj].Data()),
@@ -220,20 +223,16 @@ int BeamAnalysis::CalculateRMS(){
   }
 
   // Retrieve Channel Mapping from rootfiles ........
-  double gem1_xstrip_id[256];
-  double gem1_ystrip_id[512];
-  double gem2_xstrip_id[256];
-  double gem2_ystrip_id[512];
-  double* strip_id[nproj] = { gem1_xstrip_id, gem1_ystrip_id,
-			      gem2_xstrip_id, gem2_ystrip_id }; 
   // strip_id type should be an integer, but ....it was output as a float
   // Hardcoded by hand ,may need to think of a better solution to do this.
   // Anyway, I need a pointer to load strip map
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
-  tree_raw->SetBranchAddress("sbs.gems.x1.strip",gem1_xstrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.y1.strip",gem1_ystrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.x2.strip",gem2_xstrip_id);
-  tree_raw->SetBranchAddress("sbs.gems.y2.strip",gem2_ystrip_id);
+  double* strip_id[nproj];
+  for(int iproj=0;iproj<nproj;iproj++){
+    strip_id[iproj] = new double[ sizeArray[iproj] ];
+    TString branch_name = Form("sbs.gems.%s.strip",strProj[iproj].Data());
+    tree_raw->SetBranchAddress(branch_name,strip_id[iproj]);
+  }
   
   tree_raw->GetEntry(1); // in order to load strip map to these array
   // Caution: And this needs to be fixed if ZeroSuppression is on in SBS-offline
@@ -246,7 +245,7 @@ int BeamAnalysis::CalculateRMS(){
 
   cout << "Calculating rms... " << endl;
 
-  for(int iproj=0; iproj<4; iproj++){
+  for(int iproj=0; iproj<nproj; iproj++){
 
     fprintf(header_file,"\n");
     fprintf(header_file,"double rms_%s[%d]={",strProj[iproj].Data(),sizeArray[iproj]);
@@ -337,7 +336,9 @@ int BeamAnalysis::Analysis(){
       TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
       tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
       tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
-
+      //   ||     ||
+      // This is a bridge
+      //   ||     ||
       tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
       tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
     }
