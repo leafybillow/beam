@@ -123,7 +123,15 @@ int BeamConfig::ParseFile(){
       }
       continue;
     }
-
+    if(vecStr[0].Contains("qdc_channel")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	qdc_channel.push_back( (*iter).Atoi());
+	iter++;
+      }
+      continue;
+    }
     else{
       cerr << __FILE__ << ":"
   	   << __FUNCTION__ << ":"

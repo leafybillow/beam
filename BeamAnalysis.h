@@ -10,13 +10,10 @@ class BeamAnalysis{
   TFile *rf_raw;
   TFile *rf_output;
   
-  // Tuning Parameters
-  double fZSThreshold;
-  
   BeamConfig *fConfig;
-
+  Int_t n_gem;
   Bool_t kPlot;
-
+  
   int CalculatePed();
   int CalculateRMS();
   int Analysis();

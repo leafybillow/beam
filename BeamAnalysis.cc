@@ -316,19 +316,35 @@ int BeamAnalysis::Analysis(){
   
   Int_t nHits_1, nHits_2;
 
-  struct QDC{
-    double us_lo; // upstream detector , low range, hi-sensitivity
-    double us_hi; // upstream detector, high range,
-    double ds_lo; // downstream detector
-    double ds_hi; // downstream detector
-  }qdc;
-  
-  if(!kPlot){    
-    // Reconstructed Tree
-    tree_rec = new TTree("Rec","Rec"); 
-    //And Build  Reconstruction Branch
-    tree_rec->Branch("qdc",&qdc,"us_lo/D:us_hi:ds_lo:ds_hi");
+  // Initialize EventReader for Raw Tree
+  Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
 
+
+  vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
+  Int_t n_qdc_ch = vec_qdc_ch.size();
+  Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
+  Double_t *det_qdc_hr = new Double_t[n_qdc_ch];
+  
+  TTree* tree_raw = (TTree*)rf_raw->Get("T");
+  // Reconstructed Tree
+  tree_rec = new TTree("Rec","Rec");
+
+  if(!kPlot){
+    for(int iqdc=0;iqdc<n_qdc_ch;iqdc++){
+
+      Int_t qdc_ch = vec_qdc_ch[iqdc];
+      TString lrqdc_name = Form("sbs.sbuscint.ladc%d",qdc_ch);
+      TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
+      tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
+      tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
+
+      tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
+      tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
+    }
+  }  
+
+  if(!kPlot){    
+    //And Build  Reconstruction Branch
     tree_rec->Branch("gem1.charge_x",&vCharge_x1);
     tree_rec->Branch("gem1.charge_y",&vCharge_y1);
     tree_rec->Branch("gem1.position_x",&vPosition_x1);
@@ -367,18 +383,6 @@ int BeamAnalysis::Analysis(){
   TString strProj[4]={"x1","y1","x2","y2"};
   Int_t sizeArray[4]={256, 512, 256, 512}; 
   //__________________________________________________________________________________
-  // Initialize EventReader for Raw Tree
-  Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
-
-  Double_t us_hi,us_lo,ds_hi,ds_lo; // dummy variables
-  // Note: qdc channels need to be changed depending on run configuration
-  // Here just randomly pick up two channels for demonstration
-  TTree* tree_raw = (TTree*)rf_raw->Get("T");
-  tree_raw->SetBranchAddress("sbs.sbuscint.hadc2",&us_hi);
-  tree_raw->SetBranchAddress("sbs.sbuscint.ladc2",&us_lo);
-  tree_raw->SetBranchAddress("sbs.sbuscint.hadc1",&ds_hi);
-  tree_raw->SetBranchAddress("sbs.sbuscint.ladc1",&ds_lo);
-
   BeamGEMData bgData[4];  // GEM Data Containers
 
   for(Int_t iProj=0;iProj<nProj;iProj++){
@@ -410,14 +414,8 @@ int BeamAnalysis::Analysis(){
   for(Int_t ievt=0;ievt<nentries;ievt++){
     if(ievt%200==0)
       cout << ievt << " events analyzed"  << endl;
-    tree_raw->GetEntry(ievt);
-
     //** Retrieve replayed data from the raw tree
-    //*** QDC
-    qdc.us_lo = us_lo;
-    qdc.us_hi = us_hi;
-    qdc.ds_lo = ds_lo;
-    qdc.ds_hi = ds_hi;
+    tree_raw->GetEntry(ievt);
 
     //*** GEM
     for(Int_t iProj=0;iProj<nProj;iProj++){

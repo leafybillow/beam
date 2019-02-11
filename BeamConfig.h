@@ -14,8 +14,7 @@ class BeamConfig{
   TString rootfile_prefix;
   TString db_template;
   TString db_path;
-  Int_t n_gem;
-  
+
   Int_t run_num;
   Bool_t kPlot;
   
@@ -25,9 +24,11 @@ class BeamConfig{
   Int_t analysisType;
   TString configName;
   ifstream configFile;
-  
+
+  Int_t n_gem;
   vector<Double_t> gem_position;
   vector<Double_t> det_position;
+  vector<Int_t> qdc_channel;
   
   int ParseFile();
   vector<TString>  ParseLine(TString, TString);
@@ -43,9 +44,11 @@ class BeamConfig{
   inline TString GetOutputName() const { return output_name;};
   inline TString GetDBTemplate() const { return db_template;};
   inline Int_t GetRunNumber() const { return run_num;};
-  inline Double_t GetZSThreshold() const { return fZSThreshold;};
   inline Int_t GetAnalysisType() const{ return analysisType;};
   inline Bool_t GetPlotMode() const{ return kPlot;};
+  
+  inline vector<Int_t> GetQDCChannel() const { return qdc_channel;};
+  inline Int_t GetNGEMs() const {return n_gem;};
   
   inline void SetOutputName(TString str){output_name=str;};
   inline void SetInputName(TString str){input_name=str;};
