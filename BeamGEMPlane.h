@@ -27,6 +27,7 @@ class BeamGEMPlane: public TObject{
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
 
+  int my_id;
   //Process functions
 
   int Reconstruct(); // return number of hits
@@ -41,7 +42,7 @@ class BeamGEMPlane: public TObject{
 
  public:
   // Called by Users
-  BeamGEMPlane(TString name);
+  BeamGEMPlane();
   ~BeamGEMPlane();
   
   inline vector<double> GetPositionX() const {return fPos_x;};
@@ -60,6 +61,9 @@ class BeamGEMPlane: public TObject{
   inline BeamGEMProjection* GetProjectionX() const {return bgProjX;};
   inline BeamGEMProjection* GetProjectionY() const {return bgProjY;};
 
+
+  inline void SetID(int id) { my_id = id;};
+  
   void AddProjectionX( BeamGEMProjection* );
   void AddProjectionY( BeamGEMProjection* );
 

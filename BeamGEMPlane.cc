@@ -4,7 +4,7 @@
 
 ClassImp(BeamGEMPlane);
 
-BeamGEMPlane::BeamGEMPlane(TString name)
+BeamGEMPlane::BeamGEMPlane()
   :fPos_x(),fPos_y(),
    fCharge_x(),fCharge_y(),
    fWidth_x(),fWidth_y(),
@@ -12,9 +12,10 @@ BeamGEMPlane::BeamGEMPlane(TString name)
    fCorelation(),
    vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
-   bgProjX(NULL),bgProjY(NULL)
+   bgProjX(NULL),bgProjY(NULL),
+   my_id(-1)
 {  
-  strPlaneName = name;
+
 }
 BeamGEMPlane::~BeamGEMPlane(){}
 
@@ -61,6 +62,7 @@ int BeamGEMPlane::CheckHits(){
 int BeamGEMPlane::CheckProjections(){
   TString strName_Y = bgProjY->GetProjName();
   TString strName_X = bgProjX->GetProjName();
+
   if(strName_Y.Contains("y") && strName_X.Contains("x"))
     return 0;
   else{
