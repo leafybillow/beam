@@ -64,6 +64,7 @@ class BeamGEMProjection: public TObject{
   
   vector< AHit > vHits;
   vector < ACluster > vClusters;
+  Double_t charge_sum;
   int nStrips; // should be either 256 or 512 for GEMs in slac beam test
   int nHits;
   int nClusters;
@@ -113,6 +114,8 @@ class BeamGEMProjection: public TObject{
   ~BeamGEMProjection();
   
   inline vector< AHit> GetHits() const {return vHits;};
+  inline Double_t GetChargeSum() const { return charge_sum;};
+  
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};

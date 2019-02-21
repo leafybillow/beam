@@ -312,10 +312,14 @@ int BeamAnalysis::Analysis(){
   vector <vector<double> > vPosition;
   vector <vector<double> > vWidth;
   vector <vector<int> > vSplit;
+  vector <double> charge_sum;
+  
   vector <int> vNhits;
   vector <double> baseline_rms;
   vector <double> baseline_mean;
 
+
+  
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
   double dummy_double;
@@ -328,6 +332,7 @@ int BeamAnalysis::Analysis(){
     vSplit.push_back(dummy_vec_int);
     baseline_rms.push_back(dummy_double);
     baseline_mean.push_back(dummy_double);
+    charge_sum.push_back(dummy_double);
     if(iproj%2==0)
       vNhits.push_back(dummy_int);
   }
@@ -371,6 +376,7 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("split_%s",key),&vSplit[iproj]);
       tree_rec->Branch(Form("ped_mean_%s",key),&baseline_mean[iproj]);
       tree_rec->Branch(Form("ped_rms_%s",key),&baseline_rms[iproj]);
+      tree_rec->Branch(Form("charge_sum_%s",key),&charge_sum[iproj]);
     }
 
     for(int igem=0;igem<n_gem;igem++)
@@ -489,6 +495,7 @@ int BeamAnalysis::Analysis(){
 	vWidth[iproj] = this_plane->GetWidthX();
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
+	charge_sum[iproj] = this_plane->GetProjectionX()->GetChargeSum();
       }
       else if(proj_type=="y"){
 	vCharge[iproj] = this_plane->GetChargeY();
@@ -496,6 +503,7 @@ int BeamAnalysis::Analysis(){
 	vWidth[iproj] = this_plane->GetWidthY();
 	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
+	charge_sum[iproj] = this_plane->GetProjectionY()->GetChargeSum();
       }
 	  
     }

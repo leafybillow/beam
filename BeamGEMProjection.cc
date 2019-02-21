@@ -13,6 +13,7 @@ ClassImp(BeamGEMProjection);
 
 BeamGEMProjection::BeamGEMProjection()
   :vBGStrips(),vHits(),vClusters(),
+   charge_sum(0),nStrips(0),
    nHits(-1),nClusters(-1),
    strProjName(),
    h_proj(),h_raw(),
@@ -22,6 +23,7 @@ BeamGEMProjection::BeamGEMProjection()
 }
 BeamGEMProjection::BeamGEMProjection(TString Name, Int_t nch)
   :vBGStrips(),vHits(),vClusters(),
+   charge_sum(0),
    nHits(-1),nClusters(-1)
 {
   nStrips = nch;
@@ -63,6 +65,8 @@ int BeamGEMProjection::CoarseProcess(){
   overall_mean = CalculateMean(vStat);
   overall_rms = CalculateRMS(vStat);
   overall_rms = sqrt(pow(overall_rms,2) - pow(overall_mean,2));
+
+  charge_sum =0;
   
   if(CheckNStrips()==1) // if it fails to match nstrip
     return 1;//Failed
@@ -80,6 +84,7 @@ int BeamGEMProjection::CoarseProcess(){
 	  aCluster.pRange = vecRange[iCluster];
 	  
 	  vClusters.push_back( aCluster);
+	  charge_sum += aCluster.fCharge;
       }
       SortClusters();
       RejectCrossTalk();
