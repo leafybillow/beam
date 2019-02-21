@@ -7,8 +7,6 @@
 #include "BeamConfig.h"
 #include "BeamParameters.h"
 
-#include "table_rms.h"
-
 #include "TF1.h"
 #include "TTree.h"
 #include "TSystem.h"
@@ -25,6 +23,12 @@ BeamAnalysis::BeamAnalysis(BeamConfig *beamConfig){
 
   kPlot=fConfig->GetPlotMode();
   n_gem = fConfig->GetNGEMs();
+
+  for(int igem = 0;igem<n_gem;igem++){
+    projKey.push_back(Form("x%d",igem+1));
+    projKey.push_back(Form("y%d",igem+1));
+  }
+  
   rf_raw = TFile::Open(fConfig->GetInputName());
 
   TString input_filename = rf_raw->GetName(); 
@@ -93,7 +97,7 @@ int BeamAnalysis::CalculatePed(){
   fprintf(db_file,"# Pedestal Database for SLAC Beam Test %s",prefix_t.Data());
   
   // * Pre-Analysis GEM : Get Pedestal From Gaussian Fit
-  const int nproj = 2*n_gem;
+  const int nproj = projKey.size();
   // Summary histogram
   TH1D* hped_mean[nproj];
   TH1D* hped_rms[nproj];
@@ -103,13 +107,13 @@ int BeamAnalysis::CalculatePed(){
 
   for(int iproj=0; iproj<nproj;iproj++){
     sizeArray[iproj] = ( (iproj%2)==0 ? 256 : 512);
-    TString strDim = ( (iproj%2)==0 ? "x" : "y");
-    strProj[iproj] = Form("%s%d",strDim.Data(), (iproj/2 +1));
+
+    strProj[iproj] = projKey[iproj];
     
-    hped_mean[iproj] = new TH1D(Form("hped_mean_%d",iproj),
+    hped_mean[iproj] = new TH1D(Form("hped_mean_%s",strProj[iproj].Data() ),
 				Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
 				sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
-    hped_rms[iproj] = new TH1D(Form("hped_rms_%d",iproj),
+    hped_rms[iproj] = new TH1D(Form("hped_rms_%s",strProj[iproj].Data() ),
 			       Form("Pedestal RMS vs strip, projection %s",strProj[iproj].Data()),
 			       sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
   }
@@ -194,11 +198,11 @@ int BeamAnalysis::CalculateRMS(){
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
 
-  TString header_filename = Form("DBfiles/table_rms.h_%s",prefix_t.Data());
+  TString header_filename = Form("DBfiles/run%s_rms.table",prefix_t.Data());
   FILE *header_file = fopen(header_filename.Data(),"w");
 
   fprintf(header_file,"\n");
-  fprintf(header_file," //// RMS arrays run %s", prefix_t.Data());
+  fprintf(header_file," ### RMS arrays run %s", prefix_t.Data());
   
   const int nproj = 2*n_gem;
   TH1D* hped_mean[nproj];
@@ -248,7 +252,7 @@ int BeamAnalysis::CalculateRMS(){
   for(int iproj=0; iproj<nproj; iproj++){
 
     fprintf(header_file,"\n");
-    fprintf(header_file,"double rms_%s[%d]={",strProj[iproj].Data(),sizeArray[iproj]);
+    fprintf(header_file,"rms_%s[%d]={",strProj[iproj].Data(),sizeArray[iproj]);
 
     int nch = sizeArray[iproj];
     for(int ich=0; ich<nch;ich++){
@@ -293,31 +297,48 @@ int BeamAnalysis::Analysis(){
   Ssiz_t last_t = input_name.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
-
+  
+  
   cout << "--Begin Reconstruction and Tracking analysis " << endl;
   TTree *tree_rec;
-
-  vector <double> vCharge_x1, vCharge_y1;
-  vector <double> vPosition_x1, vPosition_y1;
-  vector <double> vWidth_x1, vWidth_y1;
-  vector <int> vSplit_x1, vSplit_y1;
-
-  vector <double> vCharge_x2, vCharge_y2;
-  vector <double> vPosition_x2, vPosition_y2;
-  vector <double> vWidth_x2, vWidth_y2;
-  vector <int> vSplit_x2, vSplit_y2;
-
-  double gem1_baseline_rms[2];
-  double gem1_baseline_mean[2];
+  Int_t nProj = 2*n_gem;
+  vector <vector<double> > vCharge_x, vCharge_y;
+  vector <vector<double> > vPosition_x, vPosition_y;
+  vector <vector<double> > vWidth_x, vWidth_y;
+  vector <vector<int> > vSplit_x, vSplit_y;
   
-  double gem2_baseline_rms[2];
-  double gem2_baseline_mean[2];  // [0]: projX; [1]:projY
-  
-  Int_t nHits_1, nHits_2;
+  vector <int> vNhits;
 
+  vector <double> baseline_rms_x;
+  vector <double> baseline_rms_y;
+  vector <double> baseline_mean_x;
+  vector <double> baseline_mean_y;
+  
+  vector <double> dummy_vec_double;
+  vector <int> dummy_vec_int;
+  double dummy_double;
+  int dummy_int;
+
+  for(int igem=0;igem<ngem;igem++){
+    vCharge_x.push_back(dummy_vec_double);
+    vCharge_y.push_back(dummy_vec_double);
+    vPosition_x.push_back(dummy_vec_double);
+    vPosition_y.push_back(dummy_vec_double);
+    vWidth_x.push_back(dummy_vec_double);
+    vWidth_y.push_back(dummy_vec_double);
+    vSplit_x.push_back(dummy_vec_int);
+    vSplit_y.push_back(dummy_vec_int);
+
+    baseline_rms_x.push_back(dummy_double);
+    baseline_rms_y.push_back(dummy_double);
+    baseline_mean_x.push_back(dummy_double);
+    baseline_mean_y.push_back(dummy_double);
+    vNhits.push_back(dummy_int);
+  }
+  
   // Initialize EventReader for Raw Tree
-  Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
-
+  // Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
+  LoadRMS();
 
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
@@ -377,7 +398,7 @@ int BeamAnalysis::Analysis(){
   //__________________________________________________________________________________
   // GEM Configuration Parameters
 
-  Int_t nProj = 4; // number of projections, 2 GEM *(X+Y) = 4
+
   Int_t nadc = 6; // number of adc samples
 
   TString strADC[6]={"adc0","adc1","adc2","adc3","adc4","adc5"};
@@ -408,7 +429,7 @@ int BeamAnalysis::Analysis(){
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
-  Bool_t kZeroSuppression = 1; // Suppressed by defaultp
+  Bool_t kZeroSuppression = 1; // Suppressed by default
   BeamGEMProjection* bgProjection[4];
 
   Int_t nentries = tree_raw->GetEntries();
@@ -553,6 +574,37 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
     c1->SaveAs(Form("plots/FitPed-%d-%d.png",iproj,strip));
     delete c1;
   }
+}
+
+int BeamAnalysis::LoadRMS(){
+  TString input_name = fConfig->GetInputName();
+  Ssiz_t first_t = input_name.Last('/') +1; // if a slash is not there, return 0.
+  Ssiz_t last_t = input_name.Last('.');
+  Int_t length_t = last_t - first_t;
+  TString prefix_t = input_name(first_t,length_t);
+
+  TString filename = Form("rootfiles/%s_rms.root",prefix_t.Data());
+
+  TFile *rms_rootfile = TFile::Open(filename);
+  // If rms does not exist
+  
+  TH1D *hrms_buff;
+  vector< Double_t> vector_rms;
+
+  Int_t nproj = projKey.size();
+  for(int iproj=0;iproj<nproj;iproj++){
+    hrms_buff = (TH1D*)rms_rootfile->FindObject(Form("hped_rms_%s",projKey[iproj].Data()));
+
+    Int_t nbins = hrms_buff->GetNbinsX();
+    for(int ibin=0;ibin<nbins;ibin++){
+      Double_t bin_content = hrms_buff->GetBinContent(ibin+1);
+      vector_rms.push_back(bin_content);
+    }
+    rms.push_back(vector_rms);
+    vector_rms.clear();
+  }
+  rms_rootfile->Close();
+  return 0;
 }
 
 void BeamAnalysis::PrintSummary(){

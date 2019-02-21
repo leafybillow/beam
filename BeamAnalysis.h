@@ -11,13 +11,16 @@ class BeamAnalysis{
   TFile *rf_output;
   
   BeamConfig *fConfig;
+  vector< vector<Double_t> > rms
   Int_t n_gem;
+  vector< TString > projKey;
   Bool_t kPlot;
   
   int CalculatePed();
   int CalculateRMS();
   int Analysis();
-
+  int LoadRMS();
+  
   void GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
 		   int iproj, int strip);
 
