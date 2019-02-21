@@ -10,6 +10,7 @@
 #include "TF1.h"
 #include "TTree.h"
 #include "TSystem.h"
+#include "TString.h"
 
 #include <iostream>
 #include <fstream>
@@ -106,9 +107,13 @@ int BeamAnalysis::CalculatePed(){
   Int_t sizeArray[nproj];
 
   for(int iproj=0; iproj<nproj;iproj++){
-    sizeArray[iproj] = ( (iproj%2)==0 ? 256 : 512);
 
     strProj[iproj] = projKey[iproj];
+    
+    if(strProj[iproj].Contains("x"))
+      sizeArray[iproj] = 256;
+    else if(strProj[iproj].Contains("y"))
+      sizeArray[iproj] = 512;
     
     hped_mean[iproj] = new TH1D(Form("hped_mean_%s",strProj[iproj].Data() ),
 				Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
@@ -198,7 +203,7 @@ int BeamAnalysis::CalculateRMS(){
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
 
-  TString header_filename = Form("DBfiles/run%s_rms.table",prefix_t.Data());
+  TString header_filename = Form("DBfiles/%s_rms.table",prefix_t.Data());
   FILE *header_file = fopen(header_filename.Data(),"w");
 
   fprintf(header_file,"\n");
@@ -291,55 +296,43 @@ int BeamAnalysis::CalculateRMS(){
 }
 
 int BeamAnalysis::Analysis(){
-  
+
   TString input_name = fConfig->GetInputName();
   Ssiz_t first_t = input_name.Last('/') +1; // if a slash is not there, return 0.
   Ssiz_t last_t = input_name.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
-  
+
+  LoadRMS();
   
   cout << "--Begin Reconstruction and Tracking analysis " << endl;
   TTree *tree_rec;
-  Int_t nProj = 2*n_gem;
-  vector <vector<double> > vCharge_x, vCharge_y;
-  vector <vector<double> > vPosition_x, vPosition_y;
-  vector <vector<double> > vWidth_x, vWidth_y;
-  vector <vector<int> > vSplit_x, vSplit_y;
-  
+  const Int_t nproj = projKey.size();
+  vector <vector<double> > vCharge; //[iproj][ihits]
+  vector <vector<double> > vPosition;
+  vector <vector<double> > vWidth;
+  vector <vector<int> > vSplit;
   vector <int> vNhits;
+  vector <double> baseline_rms;
+  vector <double> baseline_mean;
 
-  vector <double> baseline_rms_x;
-  vector <double> baseline_rms_y;
-  vector <double> baseline_mean_x;
-  vector <double> baseline_mean_y;
-  
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
   double dummy_double;
   int dummy_int;
 
-  for(int igem=0;igem<ngem;igem++){
-    vCharge_x.push_back(dummy_vec_double);
-    vCharge_y.push_back(dummy_vec_double);
-    vPosition_x.push_back(dummy_vec_double);
-    vPosition_y.push_back(dummy_vec_double);
-    vWidth_x.push_back(dummy_vec_double);
-    vWidth_y.push_back(dummy_vec_double);
-    vSplit_x.push_back(dummy_vec_int);
-    vSplit_y.push_back(dummy_vec_int);
-
-    baseline_rms_x.push_back(dummy_double);
-    baseline_rms_y.push_back(dummy_double);
-    baseline_mean_x.push_back(dummy_double);
-    baseline_mean_y.push_back(dummy_double);
-    vNhits.push_back(dummy_int);
+  for(int iproj=0;iproj<nproj;iproj++){
+    vCharge.push_back(dummy_vec_double);
+    vPosition.push_back(dummy_vec_double);
+    vWidth.push_back(dummy_vec_double);
+    vSplit.push_back(dummy_vec_int);
+    baseline_rms.push_back(dummy_double);
+    baseline_mean.push_back(dummy_double);
+    if(iproj%2==0)
+      vNhits.push_back(dummy_int);
   }
   
   // Initialize EventReader for Raw Tree
-  // Double_t* rms[4]={rms_x1,rms_y1,rms_x2,rms_y2};
-  LoadRMS();
-
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
   Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
@@ -363,75 +356,63 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
       tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
     }
-  }  
+  }
+  
 
+  
   if(!kPlot){    
     //And Build  Reconstruction Branch
-    tree_rec->Branch("gem1.charge_x",&vCharge_x1);
-    tree_rec->Branch("gem1.charge_y",&vCharge_y1);
-    tree_rec->Branch("gem1.position_x",&vPosition_x1);
-    tree_rec->Branch("gem1.position_y",&vPosition_y1);
-    tree_rec->Branch("gem1.width_x",&vWidth_x1);
-    tree_rec->Branch("gem1.width_y",&vWidth_y1);
-    tree_rec->Branch("gem1.split_x",&vSplit_x1);
-    tree_rec->Branch("gem1.split_y",&vSplit_y1);
-    tree_rec->Branch("gem1.nHits",&nHits_1);
-    tree_rec->Branch("gem1.ped_mean",gem1_baseline_mean,
-		     "gem1.ped_mean[2]/D");
-    tree_rec->Branch("gem1.ped_rms",gem1_baseline_rms,
-		     "gem1.ped_rms[2]/D");
-    
-    tree_rec->Branch("gem2.charge_x",&vCharge_x2);
-    tree_rec->Branch("gem2.charge_y",&vCharge_y2);
-    tree_rec->Branch("gem2.position_x",&vPosition_x2);
-    tree_rec->Branch("gem2.position_y",&vPosition_y2);
-    tree_rec->Branch("gem2.width_x",&vWidth_x2);
-    tree_rec->Branch("gem2.width_y",&vWidth_y2);
-    tree_rec->Branch("gem2.split_x",&vSplit_x2);
-    tree_rec->Branch("gem2.split_y",&vSplit_y2);
-    tree_rec->Branch("gem2.nHits",&nHits_2);
-    tree_rec->Branch("gem2.ped_mean",gem2_baseline_mean,
-		     "gem2.ped_mean[2]/D");
-    tree_rec->Branch("gem2.ped_rms",gem2_baseline_rms,
-		     "gem2.ped_rms[2]/D");
+    for(int iproj=0;iproj<nproj;iproj++){
+      TString str_key = projKey[iproj];
+      const char *key = str_key.Data();
+      tree_rec->Branch(Form("charge_%s",key),&vCharge[iproj]);
+      tree_rec->Branch(Form("position_%s",key),&vPosition[iproj]);
+      tree_rec->Branch(Form("width_%s",key),&vWidth[iproj]);
+      tree_rec->Branch(Form("split_%s",key),&vSplit[iproj]);
+      tree_rec->Branch(Form("ped_mean_%s",key),&baseline_mean[iproj]);
+      tree_rec->Branch(Form("ped_rms_%s",key),&baseline_rms[iproj]);
+    }
+
+    for(int igem=0;igem<n_gem;igem++)
+      tree_rec->Branch(Form("nHits_gem%d",igem+1),&vNhits[igem]);
   }
   //__________________________________________________________________________________
   // GEM Configuration Parameters
-
-
   Int_t nadc = 6; // number of adc samples
-
   TString strADC[6]={"adc0","adc1","adc2","adc3","adc4","adc5"};
-  TString strProj[4]={"x1","y1","x2","y2"};
-  Int_t sizeArray[4]={256, 512, 256, 512}; 
   //__________________________________________________________________________________
-  BeamGEMData bgData[4];  // GEM Data Containers
+  BeamGEMData bgData[nproj];  // GEM Data Containers
+  Int_t sizeArray;
+  
+  for(Int_t iproj=0;iproj<nproj;iproj++){
+    
+    if(projKey[iproj].Contains("x"))
+      sizeArray=256;
+    else if(projKey[iproj].Contains("y"))
+      sizeArray=512;
 
-  for(Int_t iProj=0;iProj<nProj;iProj++){
-
-    bgData[iProj] = BeamGEMData(iProj,sizeArray[iProj]);
+    const char* key = projKey[iproj].Data();
+    bgData[iproj] = BeamGEMData(iproj,sizeArray);
 
     for(Int_t iadc=0;iadc<nadc;iadc++){
       TString strBranch = Form("sbs.gems.%s.%s",
-			       strProj[iProj].Data(),
-			       strADC[iadc].Data());
-      tree_raw->SetBranchAddress(strBranch, bgData[iProj].adc[iadc]);
+			       key,strADC[iadc].Data());
+      tree_raw->SetBranchAddress(strBranch, bgData[iproj].adc[iadc]);
     }
-    tree_raw->SetBranchAddress(Form("sbs.gems.%s.strip",strProj[iProj].Data()),
-			       bgData[iProj].id_strip);
-    tree_raw->SetBranchAddress(Form("sbs.gems.%s.nch",strProj[iProj].Data()),
-			       &(bgData[iProj].nChannel));
-    tree_raw->SetBranchAddress(Form("sbs.gems.%s.adc_sum",strProj[iProj].Data()),
-			       bgData[iProj].adc_sum);
-    tree_raw->SetBranchAddress(Form("sbs.gems.%s.common_mode",strProj[iProj].Data()),
-			       bgData[iProj].common_mode);
+    tree_raw->SetBranchAddress(Form("sbs.gems.%s.strip",key),
+			       bgData[iproj].id_strip);
+    tree_raw->SetBranchAddress(Form("sbs.gems.%s.nch",key),
+			       &(bgData[iproj].nChannel));
+    tree_raw->SetBranchAddress(Form("sbs.gems.%s.adc_sum",key),
+			       bgData[iproj].adc_sum);
+    tree_raw->SetBranchAddress(Form("sbs.gems.%s.common_mode",key),
+			       bgData[iproj].common_mode);
   }
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
   Bool_t kZeroSuppression = 1; // Suppressed by default
-  BeamGEMProjection* bgProjection[4];
-
+  
   Int_t nentries = tree_raw->GetEntries();
   for(Int_t ievt=0;ievt<nentries;ievt++){
     if(ievt%200==0)
@@ -440,23 +421,30 @@ int BeamAnalysis::Analysis(){
     tree_raw->GetEntry(ievt);
 
     //*** GEM
-    for(Int_t iProj=0;iProj<nProj;iProj++){
-      Int_t nChannel = (Int_t)bgData[iProj].nChannel;
+    BeamGEMTracker* bgTracker = new BeamGEMTracker();
+    BeamGEMPlane* bgPlane[n_gem];// = new BeamGEMPlane*[n_gem];
+    BeamGEMProjection* bgProjection[nproj];
 
-      bgProjection[iProj] = new BeamGEMProjection( strProj[ bgData[iProj].id_Proj ],
-						   (Int_t)bgData[iProj].nChannel);
+    for(int igem=0;igem<n_gem;igem++){
+      bgPlane[igem] = new BeamGEMPlane();
+    }
+    for(Int_t iproj=0;iproj<nproj;iproj++){
+      Int_t nChannel = (Int_t)bgData[iproj].nChannel;
+
+      bgProjection[iproj] = new BeamGEMProjection( projKey[iproj],
+						   (Int_t)bgData[iproj].nChannel);
       for(Int_t ich=0; ich<nChannel;ich++){
 	  
 	Double_t arADC[6];  	  // *** A Buffer container ADC Samples
 	// common mode correction here
 	for(Int_t iadc=0 ;iadc<nadc;iadc++){
-	  arADC[iadc] = bgData[iProj].adc[iadc][ich] - bgData[iProj].common_mode[ich];
+	  arADC[iadc] = bgData[iproj].adc[iadc][ich] - bgData[iproj].common_mode[ich];
 	} 
-	Int_t myStripID = (Int_t)bgData[iProj].id_strip[ich];
+	Int_t myStripID = (Int_t)bgData[iproj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
 	// Zero suppression
 	
-	if(bgStrip->GetADCsum()>zs_threshold*sqrt(6)*rms[iProj][ich])
+	if(bgStrip->GetADCsum()>zs_threshold*sqrt(6)*rms[iproj][ich])
 	  kZeroSuppression = 0; // Not Suppressed
 	else
 	  kZeroSuppression = 1;
@@ -464,65 +452,56 @@ int BeamAnalysis::Analysis(){
 	bgStrip->SetZeroSuppression(kZeroSuppression);
 
 	// bgStrip->Process(); // FIXME: Not implemented now
-	bgProjection[iProj]->AddStrip(bgStrip);
+	bgProjection[iproj]->AddStrip(bgStrip);
 
       } // End channel loop
-      bgProjection[iProj]->Process();
+      bgProjection[iproj]->Process();
+
+      TString this_key = projKey[iproj];
+      TString proj_type = this_key[0];
+      Int_t gem_id = atoi(&this_key[1]);
+
+      if(proj_type=="x"){
+	bgPlane[gem_id-1]->SetID(gem_id);
+	bgPlane[gem_id-1]->AddProjectionX(bgProjection[iproj]);
+
+      }
+      else if(proj_type=="y")
+	bgPlane[gem_id-1]->AddProjectionY(bgProjection[iproj]);
+      
     } // End Projection Loop
-    BeamGEMTracker* bgTracker = new BeamGEMTracker();
-    BeamGEMPlane* bgPlane1 = new BeamGEMPlane("gem1");
-    BeamGEMPlane* bgPlane2 = new BeamGEMPlane("gem2");
-    bgPlane1->AddProjectionX(bgProjection[0]);
-    bgPlane1->AddProjectionY(bgProjection[1]);
-    bgPlane2->AddProjectionX(bgProjection[2]);
-    bgPlane2->AddProjectionY(bgProjection[3]);
-
-    bgPlane1->Process();
-    bgPlane2->Process();
     
-    bgTracker->AddPlane(bgPlane1);
-    bgTracker->AddPlane(bgPlane2);
-    // FIXME: a better way to do this
+    for(int igem=0;igem<n_gem;igem++){
+      bgPlane[igem]->Process();
+      bgTracker->AddPlane(bgPlane[igem]);
+    }
 
-    vCharge_x1 = bgPlane1->GetChargeX();
-    vCharge_y1 = bgPlane1->GetChargeY();
-    vPosition_x1 = bgPlane1->GetPositionX();
-    vPosition_y1 = bgPlane1->GetPositionY();
+    // Loading analysis results to new branch pointer
+    for(int iproj=0;iproj<nproj;iproj++){
+      TString this_key = projKey[iproj];
+      TString proj_type = this_key[0];
+      Int_t gem_id = (this_key.Remove(0,1)).Atoi(); 
 
-    vWidth_x1 = bgPlane1->GetWidthX();
-    vWidth_y1 = bgPlane1->GetWidthY();
-
-    nHits_1 = bgPlane1->GetNHits();
-
-    vCharge_x2 = bgPlane2->GetChargeX();
-    vCharge_y2 = bgPlane2->GetChargeY();
-    vPosition_x2 = bgPlane2->GetPositionX();
-    vPosition_y2 = bgPlane2->GetPositionY();
-
-    vWidth_x2 = bgPlane2->GetWidthX();
-    vWidth_y2 = bgPlane2->GetWidthY();
-
-    nHits_2 = bgPlane2->GetNHits();
-
-    gem1_baseline_mean[0]
-      = bgPlane1->GetProjectionX()->GetBaselineMean();
-    gem1_baseline_mean[1]
-      = bgPlane1->GetProjectionY()->GetBaselineMean();
-
-    gem1_baseline_rms[0]
-      = bgPlane1->GetProjectionX()->GetBaselineRMS();
-    gem1_baseline_rms[1]
-      = bgPlane1->GetProjectionY()->GetBaselineRMS();
-
-    gem2_baseline_mean[0]
-      = bgPlane2->GetProjectionX()->GetBaselineMean();
-    gem2_baseline_mean[1]
-      = bgPlane2->GetProjectionY()->GetBaselineMean();
-
-    gem2_baseline_rms[0]
-      = bgPlane2->GetProjectionX()->GetBaselineRMS();
-    gem2_baseline_rms[1]
-      = bgPlane2->GetProjectionY()->GetBaselineRMS();
+      BeamGEMPlane *this_plane = bgPlane[gem_id-1];
+      if(proj_type=="x"){
+	vCharge[iproj] = this_plane->GetChargeX();
+	vPosition[iproj] = this_plane->GetPositionX();
+	vWidth[iproj] = this_plane->GetWidthX();
+	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
+	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
+      }
+      else if(proj_type=="y"){
+	vCharge[iproj] = this_plane->GetChargeY();
+	vPosition[iproj] = this_plane->GetPositionY();
+	vWidth[iproj] = this_plane->GetWidthY();
+	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
+	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
+      }
+	  
+    }
+    for(int igem=0;igem<n_gem;igem++){
+      vNhits[igem] =bgPlane[igem]->GetNHits();
+    }
 
     if(!kPlot){
       tree_rec->Fill();
@@ -536,7 +515,7 @@ int BeamAnalysis::Analysis(){
   } // End Event loop
   
   if(!kPlot)
-    tree_rec->Write();
+    rf_output->WriteTObject(tree_rec);
 
   return 0;
 }
@@ -584,16 +563,19 @@ int BeamAnalysis::LoadRMS(){
   TString prefix_t = input_name(first_t,length_t);
 
   TString filename = Form("rootfiles/%s_rms.root",prefix_t.Data());
-
+  cout << "--Loading RMS" << endl;
+  
   TFile *rms_rootfile = TFile::Open(filename);
   // If rms does not exist
+  if(rms_rootfile->IsOpen())
+    cout << "--Opened RMS rootfile" << endl;
   
   TH1D *hrms_buff;
   vector< Double_t> vector_rms;
 
   Int_t nproj = projKey.size();
   for(int iproj=0;iproj<nproj;iproj++){
-    hrms_buff = (TH1D*)rms_rootfile->FindObject(Form("hped_rms_%s",projKey[iproj].Data()));
+    hrms_buff = (TH1D*)rms_rootfile->Get(Form("hped_rms_%d",iproj));
 
     Int_t nbins = hrms_buff->GetNbinsX();
     for(int ibin=0;ibin<nbins;ibin++){
@@ -604,9 +586,19 @@ int BeamAnalysis::LoadRMS(){
     vector_rms.clear();
   }
   rms_rootfile->Close();
+  cout << "--Number of Projections found: " << rms.size() << endl;
+  cout << "--Closed RMS rootfile" << endl;
   return 0;
 }
 
 void BeamAnalysis::PrintSummary(){
 
 }
+
+
+
+
+
+
+
+

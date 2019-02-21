@@ -11,7 +11,7 @@ class BeamAnalysis{
   TFile *rf_output;
   
   BeamConfig *fConfig;
-  vector< vector<Double_t> > rms
+  vector< vector<Double_t> > rms;
   Int_t n_gem;
   vector< TString > projKey;
   Bool_t kPlot;
