@@ -363,8 +363,6 @@ int BeamAnalysis::Analysis(){
     }
   }
   
-
-  
   if(!kPlot){    
     //And Build  Reconstruction Branch
     for(int iproj=0;iproj<nproj;iproj++){
@@ -380,13 +378,13 @@ int BeamAnalysis::Analysis(){
     }
 
     for(int igem=0;igem<n_gem;igem++)
-      tree_rec->Branch(Form("nHits_gem%d",igem+1),&vNhits[igem]);
+      tree_rec->Branch(Form("nHits%d",igem+1),&vNhits[igem]);
   }
-  //__________________________________________________________________________________
+  //_________________________________________________________________________________
   // GEM Configuration Parameters
   Int_t nadc = 6; // number of adc samples
   TString strADC[6]={"adc0","adc1","adc2","adc3","adc4","adc5"};
-  //__________________________________________________________________________________
+  //_________________________________________________________________________________
   BeamGEMData bgData[nproj];  // GEM Data Containers
   Int_t sizeArray;
   
