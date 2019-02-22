@@ -45,16 +45,19 @@ void BeamGEMProjection::Init(){
 		    nStrips,-length/2.0,length/2.0);
   h_raw->GetYaxis()->SetTitle("Charge(ADC counts)");
   h_raw->GetXaxis()->SetTitle("Position(mm)");
-  
+
+  h_proj->Reset();
+  h_raw->Reset();
 }
 
 int BeamGEMProjection::Process(){
 
-  int status = CoarseProcess();
-  if(status==0)
-    status = FineProcess();
-    
-  return status;
+  // int status = CoarseProcess();
+  // if(status==0)
+  //   status = FineProcess();
+  CoarseProcess();
+  FineProcess();
+  return 0;
 }
 int BeamGEMProjection::CoarseProcess(){
   // Compute baseline RMS and mean;
@@ -68,23 +71,25 @@ int BeamGEMProjection::CoarseProcess(){
 
   charge_sum =0;
   
-  if(CheckNStrips()==1) // if it fails to match nstrip
+  if(CheckNStrips()==1){ // if it fails to match nstrip
+    cerr<< "Failed to match NStrip"<< endl;
     return 1;//Failed
+  }
   else{
     if(h_proj->GetEntries()>0){
       vector< pair<int,int> > vecRange = SearchClusters();
-      ACluster aCluster;
       nClusters = vecRange.size();
-      
       for(int iCluster=0; iCluster <nClusters;iCluster++){
-	  aCluster.fCharge = ProcessCharge( vecRange[iCluster]);
-	  aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
-	  aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
-	  aCluster.fSplit =  ProcessSplitCheck(vecRange[iCluster],aCluster.peak);
-	  aCluster.pRange = vecRange[iCluster];
+	ACluster aCluster;
+	aCluster.fCharge = ProcessCharge( vecRange[iCluster]);
+	aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
+	aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
+	aCluster.peak =  ProcessSplitCheck(vecRange[iCluster]);
+	aCluster.fSplit = (aCluster.peak).size()-1;
+	aCluster.pRange = vecRange[iCluster];
 	  
-	  vClusters.push_back( aCluster);
-	  charge_sum += aCluster.fCharge;
+	vClusters.push_back( aCluster);
+	charge_sum += aCluster.fCharge;
       }
       SortClusters();
       RejectCrossTalk();
@@ -113,9 +118,10 @@ int BeamGEMProjection::CoarseProcess(){
   } // Pass CheckNStrips()
 }
 int BeamGEMProjection::FineProcess(){
-  AHit aHit;
+  vHits.clear();
   std::vector< ACluster>::iterator it = vClusters.begin();
   while(it!=vClusters.end()){
+    AHit aHit;
     if( (*it).fSplit==0){
       aHit.fPosition = (*it).fPosition;
       aHit.fCharge = (*it).fCharge;
@@ -127,20 +133,18 @@ int BeamGEMProjection::FineProcess(){
       int npeaks = (*it).fSplit+1;
       double sum = 0;
       for(int i=0; i<npeaks;i++){
-	int ibin = (*it).peak[i];
-	sum += h_proj->GetBinContent(ibin);
+    	int ibin = (*it).peak[i];
+    	sum += h_proj->GetBinContent(ibin);
       }
       for(int i=0; i<npeaks;i++){
-	int ibin = (*it).peak[i];
-	double peak_val = h_proj->GetBinContent(ibin);
-	double ratio = peak_val/sum;
-	
-	//FIXME: Now isolate multiple hits according to peak height
-	
-	aHit.fPosition = h_proj->GetBinCenter(ibin);
-	aHit.fCharge = (*it).fCharge*ratio;
-	aHit.fWidth = (*it).fWidth*ratio;
-	vHits.push_back(aHit);
+    	int ibin = (*it).peak[i];
+    	double peak_val = h_proj->GetBinContent(ibin);
+    	double ratio = peak_val/sum;
+    	//FIXME: Now isolate multiple hits according to peak height
+    	aHit.fPosition = h_proj->GetBinCenter(ibin);
+    	aHit.fCharge = ((*it).fCharge)*ratio;
+    	aHit.fWidth = ((*it).fWidth)*ratio;
+    	vHits.push_back(aHit);
       }
     }
     it++;
@@ -157,7 +161,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   
   int low=0, up=0;
 
-  int edge_cut = 5; // cut out false hits at the edge
+  int edge_cut = 35; // cut out false hits at the edge
   int start = edge_cut;
   int end = nStrips-edge_cut;
   
@@ -240,21 +244,24 @@ void BeamGEMProjection::SortHits(){
   // Sort Hits by Charge Amplitude.
   // We do this to prepare for correlation matching in Plane level 
   // insertion sort is used here
-  AHit aHit_buff;
-  for(int i=1; i<nHits; i++){
-    aHit_buff = vHits[i];
-    int j = i-1;
-    while(j>=0 && vHits[j].fCharge < aHit_buff.fCharge){
-      vHits[j+1]=vHits[j];
-      j = j-1;
+  if(vHits.size()>1){
+    AHit aHit_buff;
+    for(int i=1; i<nHits; i++){
+      aHit_buff = vHits[i];
+      int j = i-1;
+      while(j>=0 && vHits[j].fCharge < aHit_buff.fCharge){
+	vHits[j+1]=vHits[j];
+	j = j-1;
+      }
+      vHits[j+1]=aHit_buff;
     }
-    vHits[j+1]=aHit_buff;
+    // idiot check
+    for(int i=0; i<nHits-1; i++){
+      if( vHits[i].fCharge < vHits[i+1].fCharge)
+	std::cout << "Sorting went wrong! " << std::endl;
+    }
   }
-  // idiot check
-  for(int i=0; i<nHits-1; i++){
-    if( vHits[i].fCharge < vHits[i+1].fCharge)
-      std::cout << "Sorting went wrong! " << std::endl;
-  }
+
 }
 
 int BeamGEMProjection::CheckNStrips(){
@@ -417,12 +424,13 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 
 }
 
-int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange, vector<int> &peak){
+vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
   
   // Adapted from Jlab-TreeSearch::GEMPlane::Decode()
   int iter = prRange.first;
   double max_val = h_proj->GetBinContent(iter);
-  double max_pos;
+  double max_pos = iter;
+  vector<int> peak;
   int end = prRange.second;
   int width = prRange.second - prRange.first;
 
@@ -450,7 +458,7 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange, vector<int> &pea
 	  eStatus = kFindMin;
 	  min_val = cur_val;
 	  peak.push_back(max_pos);
-	  continue;
+	  //	  continue;
 	}
 	break;
       case kFindMin:
@@ -459,16 +467,20 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange, vector<int> &pea
 	else if (cur_val> min_val*frac_up){
 	  eStatus = kFindMax;
 	  max_val = cur_val;
+	  max_pos = iter;
 	  min_counts ++;
-	  continue;
+	  //	  continue;
 	}
 	break;
       } // End of switch
     } // End of iter while-loop
-    return min_counts; // Number of local minimum found
   } // End of ... I know
-  else
-    return 0;  // No splitting found 
+  // cout << "Range " << prRange.first <<"-" << prRange.second<<":";
+  // cout << "fsplit " << min_counts << ":";
+  // for(int i=0;i<peak.size();i++)
+  //   cout << peak[i] << "\t" ;
+  // cout << endl;
+  return peak;  // No splitting found 
 }
 
 

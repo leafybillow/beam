@@ -93,7 +93,7 @@ class BeamGEMProjection: public TObject{
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
-  int ProcessSplitCheck(pair<int,int>, vector<int> &peak);
+  vector<int> ProcessSplitCheck(pair<int,int>);
   
   void RejectCrossTalk(); 
   int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
