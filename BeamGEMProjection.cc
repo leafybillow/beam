@@ -80,7 +80,7 @@ int BeamGEMProjection::CoarseProcess(){
 	  aCluster.fCharge = ProcessCharge( vecRange[iCluster]);
 	  aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
 	  aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
-	  aCluster.fSplit =  ProcessSplitCheck(vecRange[iCluster]);
+	  aCluster.fSplit =  ProcessSplitCheck(vecRange[iCluster],aCluster.peak);
 	  aCluster.pRange = vecRange[iCluster];
 	  
 	  vClusters.push_back( aCluster);
@@ -113,16 +113,39 @@ int BeamGEMProjection::CoarseProcess(){
   } // Pass CheckNStrips()
 }
 int BeamGEMProjection::FineProcess(){
-  //FIXME: TO-DO
-  if(nHits==1){ // Right now only process single non-splitting cluster hits
-    AHit aHit;
-    aHit.fPosition = vClusters[0].fPosition;
-    aHit.fCharge = vClusters[0].fCharge;
-    aHit.fWidth = vClusters[0].fWidth;
-    aHit.fRes = ProcessResolution(vClusters[0].pRange);
-    
-    vHits.push_back(aHit);
+  AHit aHit;
+  std::vector< ACluster>::iterator it = vClusters.begin();
+  while(it!=vClusters.end()){
+    if( (*it).fSplit==0){
+      aHit.fPosition = (*it).fPosition;
+      aHit.fCharge = (*it).fCharge;
+      aHit.fWidth = (*it).fWidth;
+      //aHit.fRes = ProcessResolution((*it).pRange);
+      vHits.push_back(aHit);
+    }
+    else{
+      int npeaks = (*it).fSplit+1;
+      double sum = 0;
+      for(int i=0; i<npeaks;i++){
+	int ibin = (*it).peak[i];
+	sum += h_proj->GetBinContent(ibin);
+      }
+      for(int i=0; i<npeaks;i++){
+	int ibin = (*it).peak[i];
+	double peak_val = h_proj->GetBinContent(ibin);
+	double ratio = peak_val/sum;
+	
+	//FIXME: Now isolate multiple hits according to peak height
+	
+	aHit.fPosition = h_proj->GetBinCenter(ibin);
+	aHit.fCharge = (*it).fCharge*ratio;
+	aHit.fWidth = (*it).fWidth*ratio;
+	vHits.push_back(aHit);
+      }
+    }
+    it++;
   }
+  SortHits();
   return 0 ;
 }
 vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
@@ -350,42 +373,6 @@ int BeamGEMProjection::TestCrossTalk(ACluster i, ACluster j){
   return isCrossTalk;
 }
 
-// int BeamGEMProjection::TestCrossTalk_v1(int iHit1, int iHit2){
-// //A quick way to test cross talk
-//   // int strip[4] = {32,88,118,127} ;  unit  number strips
-//   double target[4] = {12.8, 35.2, 47.2, 50.8}; // target = strip*0.4 unit: mm
-  
-//   double position1 = vHits[iHit1].fPosition;
-//   double width = vHits[iHit1].fWidth * 0.5; // just need half the width
-//   double position2 = vHits[iHit2].fPosition;
-
-//   int myapv1  = ceil(position1 /50.8);
-//   int myapv2  = ceil(position2 /50.8); // returns an integer representing apv id
-
-//   double separation = fabs(position2-position1);
-//   bool isCrossTalk = 0; 
-//   int i=0;
-
-//   if( myapv1 != myapv2 ){
-//     // APV ids mismatch with each other : 
-//     // two positions are crossing the border of 2 APVs , so it is not cross-talk
-//     return 0;
-//   }
-//   else{
-//     while(isCrossTalk==0 && i!=4 ){
-//       if( fabs(separation-target[i])<=width ){
-// 	isCrossTalk = 1;
-// 	break;
-//       }
-//       i++;
-//     }
-//     if(isCrossTalk)
-//       return 1;
-//     else
-//       return 0;
-//   }
-// }
-
 void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 
   // 1. Remove cross talk or noisy clusters from vHits array
@@ -430,11 +417,12 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 
 }
 
-int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
+int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange, vector<int> &peak){
   
   // Adapted from Jlab-TreeSearch::GEMPlane::Decode()
   int iter = prRange.first;
   double max_val = h_proj->GetBinContent(iter);
+  double max_pos;
   int end = prRange.second;
   int width = prRange.second - prRange.first;
 
@@ -454,11 +442,14 @@ int BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
       cur_val = h_proj->GetBinContent(iter);
       switch(eStatus){
       case kFindMax:
-	if(cur_val>max_val)
+	if(cur_val>max_val){
 	  max_val = cur_val;
+	  max_pos = iter;
+	}
 	else if( cur_val < max_val*frac_down){
 	  eStatus = kFindMin;
 	  min_val = cur_val;
+	  peak.push_back(max_pos);
 	  continue;
 	}
 	break;

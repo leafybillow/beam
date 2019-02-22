@@ -33,7 +33,7 @@ int BeamGEMPlane::Process(){
     int nHits_x = bgProjX->GetNHits();
     int nHits_y = bgProjY->GetNHits();
     nHits = (nHits_x >= nHits_y ? nHits_x : nHits_y);
-    if(nHits == 1)
+    //if(nHits == 1)
       CollectResults();
     return 0;
   }

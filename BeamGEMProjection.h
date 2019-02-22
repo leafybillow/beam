@@ -47,6 +47,7 @@ struct ACluster{
   int fWidth; // A cluster width, unit: # of strips, an integer
   pair<int, int> pRange;
   int fSplit;  // if 0, no split is detected
+  vector<int> peak; // peak position;
 };
 
 struct AHit{
@@ -92,7 +93,7 @@ class BeamGEMProjection: public TObject{
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
-  int ProcessSplitCheck(pair<int,int>);
+  int ProcessSplitCheck(pair<int,int>, vector<int> &peak);
   
   void RejectCrossTalk(); 
   int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
