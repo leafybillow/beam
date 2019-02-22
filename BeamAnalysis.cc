@@ -521,10 +521,7 @@ int BeamAnalysis::Analysis(){
     }
 
     if(kPlot){
-      if(vNhits[0]==2 && vPosition[0][1]>49){
-      	cout <<"Position: "<<  vPosition[0][0] << "\t" << vPosition[0][1] << endl;
-	bgTracker->PlotResults(prefix_t,ievt);
-      }
+      bgTracker->PlotResults(prefix_t,ievt);
     }
 
   } // End Event loop

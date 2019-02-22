@@ -6,6 +6,8 @@ class BeamGEMPlane;
 class BeamGEMProjection;
 class BeamGEMTracker: public TObject{
  private:
+
+  
   vector<double> fSlope_zx;
   vector<double> fSlope_zy;
   vector<double> fTheta;
@@ -15,6 +17,7 @@ class BeamGEMTracker: public TObject{
 
   vector<BeamGEMPlane* > vPlanes;
   int nTracks;
+  bool isGoldenTrack; 
  public:
   BeamGEMTracker();
   ~BeamGEMTracker();

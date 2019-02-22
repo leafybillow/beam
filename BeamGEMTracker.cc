@@ -10,7 +10,7 @@ BeamGEMTracker::BeamGEMTracker()
    fTheta(),fPhi(),
    fDet_x(),fDet_y(),
    vPlanes(),
-   nTracks(-1){
+   nTracks(-1),isGoldenTrack(0){
   
   Init();
 }
@@ -18,6 +18,7 @@ BeamGEMTracker::BeamGEMTracker()
 BeamGEMTracker::~BeamGEMTracker(){
 }
 void BeamGEMTracker::Init(){
+  
 }
 
 void BeamGEMTracker::PlotResults(TString runName, int ievt){
@@ -56,3 +57,29 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
 void BeamGEMTracker::AddPlane(BeamGEMPlane* bgPlane){
   vPlanes.push_back(bgPlane);
 }
+
+void BeamGEMTracker::Process(){
+  // Int_t nplane = vPlanes.size();
+  // if(nplane==2){
+
+  //   Int_t nhits1 = vPlanes[0]->GetNHits();
+  //   Int_t nhits2 = vPlanes[1]->GetNHits();
+  //   if(nhits2==1 && nhits1==1){
+      
+
+  //   }
+    
+}
+
+
+// }
+
+// void BeamGEMTracker::Tracking_v2(){
+  
+
+// }
+
+// void BeamGEMTracker::Tracking_v3(){
+
+  
+// }
