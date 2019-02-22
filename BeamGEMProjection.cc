@@ -52,12 +52,11 @@ void BeamGEMProjection::Init(){
 
 int BeamGEMProjection::Process(){
 
-  // int status = CoarseProcess();
-  // if(status==0)
-  //   status = FineProcess();
-  CoarseProcess();
-  FineProcess();
-  return 0;
+  int status = CoarseProcess();
+  if(status==0)
+    status = FineProcess();
+
+  return status;
 }
 int BeamGEMProjection::CoarseProcess(){
   // Compute baseline RMS and mean;
@@ -475,11 +474,6 @@ vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
       } // End of switch
     } // End of iter while-loop
   } // End of ... I know
-  // cout << "Range " << prRange.first <<"-" << prRange.second<<":";
-  // cout << "fsplit " << min_counts << ":";
-  // for(int i=0;i<peak.size();i++)
-  //   cout << peak[i] << "\t" ;
-  // cout << endl;
   return peak;  // No splitting found 
 }
 
