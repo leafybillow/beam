@@ -315,6 +315,7 @@ int BeamAnalysis::Analysis(){
   vector <double> charge_sum;
   
   vector <int> vNhits;
+  vector <int> vNhits_gem;
   vector <double> baseline_rms;
   vector <double> baseline_mean;
 
@@ -333,8 +334,9 @@ int BeamAnalysis::Analysis(){
     baseline_rms.push_back(dummy_double);
     baseline_mean.push_back(dummy_double);
     charge_sum.push_back(dummy_double);
+    vNhits.push_back(dummy_int);
     if(iproj%2==0)
-      vNhits.push_back(dummy_int);
+      vNhits_gem.push_back(dummy_int);
   }
   
   // Initialize EventReader for Raw Tree
@@ -375,10 +377,13 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("ped_mean_%s",key),&baseline_mean[iproj]);
       tree_rec->Branch(Form("ped_rms_%s",key),&baseline_rms[iproj]);
       tree_rec->Branch(Form("charge_sum_%s",key),&charge_sum[iproj]);
+      tree_rec->Branch(Form("nHits_%s",key),&vNhits[iproj]);
     }
 
-    for(int igem=0;igem<n_gem;igem++)
-      tree_rec->Branch(Form("nHits%d",igem+1),&vNhits[igem]);
+    for(int igem=0;igem<n_gem;igem++){
+      tree_rec->Branch(Form("nHits_gem%d",igem+1),&vNhits_gem[igem]);
+    }
+      
   }
   //_________________________________________________________________________________
   // GEM Configuration Parameters
@@ -494,6 +499,7 @@ int BeamAnalysis::Analysis(){
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
 	charge_sum[iproj] = this_plane->GetProjectionX()->GetChargeSum();
+	vNhits[iproj] = this_plane->GetProjectionX()->GetNHits();
       }
       else if(proj_type=="y"){
 	vCharge[iproj] = this_plane->GetChargeY();
@@ -502,11 +508,12 @@ int BeamAnalysis::Analysis(){
 	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
 	charge_sum[iproj] = this_plane->GetProjectionY()->GetChargeSum();
+	vNhits[iproj] = this_plane->GetProjectionY()->GetNHits();
       }
 	  
     }
     for(int igem=0;igem<n_gem;igem++){
-      vNhits[igem] =bgPlane[igem]->GetNHits();
+      vNhits_gem[igem] =bgPlane[igem]->GetNHits();
     }
 
     if(!kPlot){
@@ -514,8 +521,10 @@ int BeamAnalysis::Analysis(){
     }
 
     if(kPlot){
-      // bgPlane1->GetProjectionY()->PlotResults(prefix_t,ievt);
-      bgTracker->PlotResults(prefix_t,ievt);
+      if(vNhits[0]==2 && vPosition[0][1]>49){
+      	cout <<"Position: "<<  vPosition[0][0] << "\t" << vPosition[0][1] << endl;
+	bgTracker->PlotResults(prefix_t,ievt);
+      }
     }
 
   } // End Event loop
