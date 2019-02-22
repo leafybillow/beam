@@ -160,7 +160,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   
   int low=0, up=0;
 
-  int edge_cut = 35; // cut out false hits at the edge
+  int edge_cut = 5; // cut out false hits at the edge
   int start = edge_cut;
   int end = nStrips-edge_cut;
   
