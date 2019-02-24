@@ -10,6 +10,7 @@ double zs_threshold = 3.0;
 double width_cut=1.0;
 double width_threshold = 3.0; 
 double split_frac=0.1;
+int edge_cut = 5;
 
 BeamConfig::BeamConfig(){
   run_num= -1;
@@ -90,6 +91,10 @@ int BeamConfig::ParseFile(){
     }
     if(vecStr[0].Contains("width_cut")){
       width_cut = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("edge_cut")){
+      edge_cut = vecStr[1].Atoi();
       continue;
     }
     if(vecStr[0].Contains("width_threshold")){
@@ -197,6 +202,8 @@ void BeamConfig::PrintSummary(){
        << "Zero Suppression threshold: "  << zs_threshold << endl;
   cout << "--"
        << "Reject cluster not greater than: "  << width_cut << endl;
+  cout << "--"
+       << "Cut off Number of strips in the edge : "  << edge_cut << endl;
   cout << "--"
        << "Oversize Cluster threshold: "  << width_threshold << endl;
   cout << "--"
