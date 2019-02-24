@@ -319,8 +319,6 @@ int BeamAnalysis::Analysis(){
   vector <double> baseline_rms;
   vector <double> baseline_mean;
 
-
-  
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
   double dummy_double;
@@ -546,9 +544,9 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   par[1] = bincenter;
   par[2] = rms; 
 
-  TF1 *f_gaus = new TF1("f_gaus","gaus",0,5e4);
+  TF1 *f_gaus = new TF1("f_gaus","gaus",-5e4,5e4);
   f_gaus->SetParameters(par);
-  h_fit->Fit("f_gaus","QNR","",bincenter-2*rms,bincenter+2*rms);
+  h_fit->Fit("f_gaus","QNR","",bincenter-rms,bincenter+rms);
 
   mean = f_gaus->GetParameter(1);
   sigma  = f_gaus->GetParameter(2);
@@ -589,7 +587,7 @@ int BeamAnalysis::LoadRMS(){
   for(int iproj=0;iproj<nproj;iproj++){
     hrms_buff = (TH1D*)rms_rootfile->Get(Form("hped_rms_%d",iproj));
 
-    Int_t nbins = hrms_buff->GetNbinsX();
+    Int_t nbins = hrms_buff->GetEntries();
     for(int ibin=0;ibin<nbins;ibin++){
       Double_t bin_content = hrms_buff->GetBinContent(ibin+1);
       vector_rms.push_back(bin_content);
