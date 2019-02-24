@@ -11,6 +11,7 @@ double width_cut=1.0;
 double width_threshold = 3.0; 
 double split_frac=0.1;
 int edge_cut = 5;
+int stability = 50;
 
 BeamConfig::BeamConfig(){
   run_num= -1;
@@ -95,6 +96,10 @@ int BeamConfig::ParseFile(){
     }
     if(vecStr[0].Contains("edge_cut")){
       edge_cut = vecStr[1].Atoi();
+      continue;
+    }
+    if(vecStr[0].Contains("stability")){
+      stability = vecStr[1].Atoi();
       continue;
     }
     if(vecStr[0].Contains("width_threshold")){
@@ -208,4 +213,6 @@ void BeamConfig::PrintSummary(){
        << "Oversize Cluster threshold: "  << width_threshold << endl;
   cout << "--"
        << "Spliting Fraction threshold: "  << split_frac << endl;
+  cout << "--"
+       << "Stability (adc counts): "  << stability << endl;
 }

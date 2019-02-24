@@ -84,7 +84,11 @@ int BeamGEMProjection::CoarseProcess(){
 	aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
 	aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
 	aCluster.peak =  ProcessSplitCheck(vecRange[iCluster]);
-	aCluster.fSplit = (aCluster.peak).size()-1;
+	if( (aCluster.peak).size()<=1)
+	  aCluster.fSplit = 0;
+	else
+	  aCluster.fSplit = (aCluster.peak).size()-1;
+	
 	aCluster.pRange = vecRange[iCluster];
 	  
 	vClusters.push_back( aCluster);
@@ -176,6 +180,11 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       if((up-low)>width_cut){
 	vecRange.push_back( make_pair(low,up) );
       }
+      else{
+	for(int i=low;i<up;i++)
+	  h_proj->SetBinContent(i,0);
+      }
+	
     }
   }
   return vecRange;
@@ -287,7 +296,8 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
   bool zsflag = bgGEMStrip->GetZSStatus();
   
   if(!zsflag){ // if not zero suppressed
-    h_proj->SetBinContent(strip_id,ampl);
+    if(strip_id>edge_cut && strip_id <nStrips-edge_cut)
+      h_proj->SetBinContent(strip_id,ampl);
   }
   
   if(zsflag)
@@ -460,7 +470,7 @@ vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
 	  max_val = cur_val;
 	  max_pos = iter;
 	}
-	else if( cur_val < max_val*frac_down){
+	else if( (max_val-cur_val) >stability || iter == end){
 	  eStatus = kFindMin;
 	  min_val = cur_val;
 	  peak.push_back(max_pos);
@@ -470,7 +480,7 @@ vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
       case kFindMin:
 	if(cur_val<min_val)
 	  min_val = cur_val;
-	else if (cur_val> min_val*frac_up){
+	else if (cur_val-min_val> stability){
 	  eStatus = kFindMax;
 	  max_val = cur_val;
 	  max_pos = iter;
