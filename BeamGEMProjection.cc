@@ -160,7 +160,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   
   int low=0, up=0;
 
-  int edge_cut = 5; // cut out false hits at the edge
+  // int edge_cut = 5; // cut out false hits at the edge
   int start = edge_cut;
   int end = nStrips-edge_cut;
   
@@ -327,8 +327,15 @@ void BeamGEMProjection::RejectCrossTalk(){
     while(it!=vClusters.end()){
       while(it_next!=vClusters.end()){
 	isCrossTalk = TestCrossTalk(*it, *it_next);
-	if(isCrossTalk)
+	if(isCrossTalk){
+	  int bin_begin = ((*it_next).pRange).first;
+	  int bin_end = ((*it_next).pRange).second;
+	  
+	  for(int i=bin_begin;i<bin_end;i++)
+	    h_proj->SetBinContent(i,0);
+	  
 	  it_next = vClusters.erase(it_next);
+	}
 	else
 	  it_next++;
       }

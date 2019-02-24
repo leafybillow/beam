@@ -120,7 +120,8 @@ class BeamGEMProjection: public TObject{
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};
-  inline TH1D* GetHistogram() const {return h_raw;};
+  inline TH1D* GetRawHist() const {return h_raw;};
+  inline TH1D* GetProjHist() const {return h_proj;};
   
   inline double GetBaselineMean() const {return baseline_mean;};
   inline double GetBaselineRMS() const {return baseline_rms;};

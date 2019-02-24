@@ -32,16 +32,49 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   pad_gem1_x->Draw();
   pad_gem2_y->Draw();
   pad_gem2_x->Draw();
+  TH1D *h_buff;
   
   pad_gem1_y->cd();
-  vPlanes[0]->GetProjectionY()->GetHistogram()->Draw();
+  h_buff =vPlanes[0]->GetProjectionY()->GetRawHist();
+  h_buff->Draw();
+  h_buff =vPlanes[0]->GetProjectionY()->GetProjHist();
+  h_buff->SetFillColor(kGreen);
+  h_buff->SetLineColor(kWhite);
+  h_buff->SetLineWidth(0.0);
+  h_buff->Draw("box same");
+  h_buff =vPlanes[0]->GetProjectionY()->GetRawHist();
+  h_buff->Draw("same");  
+
   pad_gem1_x->cd();
-  vPlanes[0]->GetProjectionX()->GetHistogram()->Draw();
+  h_buff =vPlanes[0]->GetProjectionX()->GetRawHist();
+  h_buff->Draw();
+  h_buff =vPlanes[0]->GetProjectionX()->GetProjHist();
+  h_buff->SetFillColor(kGreen);
+  h_buff->SetLineColor(kWhite);
+  h_buff->SetLineWidth(0.0);
+  h_buff->Draw("box same");
+  h_buff =vPlanes[0]->GetProjectionX()->GetRawHist();
+  h_buff->Draw("same");
 
   pad_gem2_y->cd();
-  vPlanes[1]->GetProjectionY()->GetHistogram()->Draw();
+  h_buff =vPlanes[1]->GetProjectionY()->GetRawHist();
+  h_buff->Draw();
+  h_buff =vPlanes[1]->GetProjectionY()->GetProjHist();
+  h_buff->SetFillColor(kGreen);
+  h_buff->SetLineColor(kWhite);
+  h_buff->Draw("box same");
+  h_buff =vPlanes[1]->GetProjectionY()->GetRawHist();
+  h_buff->Draw("same");
+
   pad_gem2_x->cd();
-  vPlanes[1]->GetProjectionX()->GetHistogram()->Draw();
+  h_buff =vPlanes[1]->GetProjectionX()->GetRawHist();
+  h_buff->Draw();
+  h_buff =vPlanes[1]->GetProjectionX()->GetProjHist();
+  h_buff->SetFillColor(kGreen);
+  h_buff->SetLineColor(kWhite);
+  h_buff->Draw("box same");
+  h_buff =vPlanes[1]->GetProjectionX()->GetRawHist();
+  h_buff->Draw("same");
 
   c1->cd();
   TText *text= new TText(0.0,0.95,
