@@ -12,6 +12,7 @@ double width_threshold = 3.0;
 double split_frac=0.1;
 int edge_cut = 5;
 int stability = 50;
+double xtalk_threshold = 0.1;
 
 BeamConfig::BeamConfig(){
   run_num= -1;
@@ -110,7 +111,10 @@ int BeamConfig::ParseFile(){
       split_frac = vecStr[1].Atof();
       continue;
     }
-
+    if(vecStr[0].Contains("xtalk_thresold")){
+      xtalk_threshold = vecStr[1].Atof();
+      continue;
+    }
     if(vecStr[0].Contains("n_gem")){
       n_gem = vecStr[1].Atoi();
       continue;

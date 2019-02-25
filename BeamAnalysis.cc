@@ -580,8 +580,10 @@ int BeamAnalysis::LoadRMS(){
   Ssiz_t last_t = input_name.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
-
-  TString filename = Form("rootfiles/%s_rms.root",prefix_t.Data());
+  TString rf_path = fConfig->GetRFPath();
+  TString filename = Form("%s%s_rms.root",
+			  rf_path.Data(),
+			  prefix_t.Data());
   cout << "--Loading RMS" << endl;
   
   TFile *rms_rootfile = TFile::Open(filename);

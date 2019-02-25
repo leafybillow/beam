@@ -380,19 +380,23 @@ int BeamGEMProjection::TestCrossTalk(ACluster i, ACluster j){
   int myapv1_up = floor(strip1_up/128);
   
   // Since induced cluster sits in a relative small range,
-  // it would be easier to start searching from the induced one 
-  if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
-    // at least one is equal and then trigger cross talk test
-    int a = (strip2_neighbor_hi - strip1_lo)*(strip2_neighbor_hi - strip1_up);
-    int b = (strip2_neighbor_lo - strip1_lo)*(strip2_neighbor_lo - strip1_up);
-    if ( a<0 || b<0)
-      isCrossTalk =1;
+  // it would be easier to start searching from the induced one
+  if(j.fCharge > (i.fCharge)*xtalk_threshold)
+    isCrossTalk = 0;
+  else {
+    if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
+      // at least one is equal and then trigger cross talk test
+      int a = (strip2_neighbor_hi - strip1_lo)*(strip2_neighbor_hi - strip1_up);
+      int b = (strip2_neighbor_lo - strip1_lo)*(strip2_neighbor_lo - strip1_up);
+      if ( a<0 || b<0)
+	isCrossTalk =1;
+      else
+	isCrossTalk =0;
+    }
     else
-      isCrossTalk =0;
+      isCrossTalk = 0; // it is not
   }
-  else
-    isCrossTalk = 0; // it is not
-
+  
   return isCrossTalk;
 }
 
