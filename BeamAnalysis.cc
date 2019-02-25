@@ -35,9 +35,13 @@ BeamAnalysis::BeamAnalysis(BeamConfig *beamConfig){
   TString input_filename = rf_raw->GetName(); 
   cout << "--Input file " << input_filename << " is opened. " << endl;
   if(!kPlot){
-    rf_output = TFile::Open(fConfig->GetOutputName() ,"RECREATE");
+    rf_output = TFile::Open(fConfig->GetOutputName(),
+			    "RECREATE");
     TString output_filename = rf_output->GetName();
-    cout << "--Output ROOTFile " << output_filename << " is recreated. " << endl;
+    
+    cout << "--Output ROOTFile "
+	 << output_filename
+	 << " is recreated. " << endl;
   }
   else
     cout << "--Plot Mode is ON" << endl;
@@ -80,8 +84,10 @@ int BeamAnalysis::CalculatePed(){
   Ssiz_t last_t = input_name.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
-
-  TString db_filename = Form("DBfiles/db_sbs.gems.dat_%s",prefix_t.Data());
+  TString db_path = fConfig->GetDBPath();
+  TString db_filename = Form("%sdb_sbs.gems.dat_%s",
+			     db_path.Data(),
+			     prefix_t.Data());
   // Make a copy of template
   std::ifstream srce( db_template.Data(), std::ios::binary ) ;
   std::ofstream dest( db_filename.Data(), std::ios::binary ) ;
@@ -202,8 +208,11 @@ int BeamAnalysis::CalculateRMS(){
   Ssiz_t last_t = input_name.Last('.');
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
-
-  TString header_filename = Form("DBfiles/%s_rms.table",prefix_t.Data());
+  TString db_path = fConfig->GetDBPath();
+  TString header_filename = Form("%s/%s_rms.table",
+				 db_path.Data(),
+				 prefix_t.Data());
+  
   FILE *header_file = fopen(header_filename.Data(),"w");
 
   fprintf(header_file,"\n");

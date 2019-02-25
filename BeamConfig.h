@@ -46,7 +46,8 @@ class BeamConfig{
   inline Int_t GetRunNumber() const { return run_num;};
   inline Int_t GetAnalysisType() const{ return analysisType;};
   inline Bool_t GetPlotMode() const{ return kPlot;};
-  
+  inline TString GetDBPath() const { return db_path;};
+  inline TString GetRFPath() const {return rootfile_path;};
   inline vector<Int_t> GetQDCChannel() const { return qdc_channel;};
   inline Int_t GetNGEMs() const {return n_gem;};
   
