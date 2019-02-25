@@ -6,7 +6,6 @@ class BeamGEMPlane;
 class BeamGEMProjection;
 class BeamGEMTracker: public TObject{
  private:
-
   
   vector<double> fSlope_zx;
   vector<double> fSlope_zy;
