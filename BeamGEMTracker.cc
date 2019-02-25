@@ -3,6 +3,8 @@
 #include "BeamGEMProjection.h"
 #include "TH1D.h"
 #include "TText.h"
+#include "TBox.h"
+#include "TGraph.h"
 ClassImp(BeamGEMTracker);
 
 BeamGEMTracker::BeamGEMTracker()
@@ -22,7 +24,7 @@ void BeamGEMTracker::Init(){
 }
 
 void BeamGEMTracker::PlotResults(TString runName, int ievt){
-  TCanvas *c1 = new TCanvas("c1","c1",1400,1000);
+  TCanvas *c1 = new TCanvas("c1","c1",1600,1000);
   c1->Divide(2,1);
   TVirtualPad* pad_track = c1->cd(1);
   TVirtualPad* pad_gems = c1->cd(2);
@@ -46,7 +48,6 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     h_buff->SetStats(0);
     h_buff->SetFillColor(kGreen);
     h_buff->SetLineColor(kWhite);
-    h_buff->SetLineWidth(0.0);
     h_buff->Draw("box same");
     h_buff =vPlanes[iplane]->GetProjectionY()->GetRawHist();
     h_buff->Draw("same");  
@@ -59,13 +60,76 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     h_buff->SetStats(0);
     h_buff->SetFillColor(kGreen);
     h_buff->SetLineColor(kWhite);
-    h_buff->SetLineWidth(0.0);
     h_buff->Draw("box same");
     h_buff =vPlanes[iplane]->GetProjectionX()->GetRawHist();
     h_buff->Draw("same");  
 
   }
+  
+  Double_t *gem_z = new Double_t[nplane];
+  vector<Double_t> vec_hit_y;
+  vector<Double_t> vec_hit_x;
+  vector<Double_t> vec_pos_z;
+  
+  vector < TBox* > box_zy;
+  vector < TBox* > box_zx;
+  
+  for(int i=0;i<nplane;i++){
+    gem_z[i] = vPlanes[i]->GetPositionZ();
+    int nhits_y = (vPlanes[i]->GetPositionY()).size();
+    int nhits_x = (vPlanes[i]->GetPositionX()).size();
+    if( nhits_x>0 && nhits_y >0){
+      vec_hit_y.push_back( (vPlanes[i]->GetPositionY() )[0] );
+      vec_hit_x.push_back( (vPlanes[i]->GetPositionX() )[0] );
+      vec_pos_z.push_back( gem_z[i]);
+    }
+    
+    TBox *bgem_y = new TBox(gem_z[i]+2,-100.0, gem_z[i]+20, 100);
+    TBox *bgem_x = new TBox(gem_z[i]+2,-50.0, gem_z[i]+20, 50);
+    
+    bgem_y->SetLineColor(8);
+    bgem_x->SetLineColor(8);
+    box_zy.push_back(bgem_y);
+    box_zx.push_back(bgem_x);
+  }
+  
+  pad_track->Divide(1,2);
+  pad_track->cd(1);
+  int npt = vec_pos_z.size();
+  Double_t *hit_y = new Double_t[npt];
+  Double_t *hit_x = new Double_t[npt];
+  Double_t *pos_z = new Double_t[npt];
+  if(npt>0){
+    for(int i=0;i<npt;i++){
+      hit_y[i] = vec_hit_y[i];
+      hit_x[i] = vec_hit_x[i];
+      pos_z[i] = vec_pos_z[i];
+    }
+  
+    TGraph* g_zy = new TGraph(npt, pos_z, hit_y);
+    g_zy->SetMarkerSize(1);
+    g_zy->SetMarkerStyle(20);
+    g_zy->Draw("AP");
+    g_zy->SetTitle("");
+    g_zy->GetYaxis()->SetRangeUser(-110,110);
+    g_zy->GetXaxis()->SetLimits(-10,850);
+    
+    for(int i=0;i<nplane;i++)
+      box_zy[i]->Draw("l same");
 
+  
+    pad_track->cd(2);
+    TGraph* g_zx = new TGraph(npt, pos_z, hit_x);
+    g_zx->SetMarkerSize(1);
+    g_zx->SetMarkerStyle(20);
+    g_zx->Draw("AP");
+    g_zx->SetTitle("");
+    g_zx->GetYaxis()->SetRangeUser(-105,105);
+    g_zx->GetXaxis()->SetLimits(-10,850);
+
+    for(int i=0;i<nplane;i++)
+      box_zx[i]->Draw("l same");
+  }  
   c1->cd();
   TText *text= new TText(0.0,0.95,
 			 Form("%s-Tracker-evt-%d",runName.Data(),ievt));
