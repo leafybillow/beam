@@ -475,19 +475,19 @@ int BeamAnalysis::Analysis(){
 
       TString this_key = projKey[iproj];
       TString proj_type = this_key[0];
-      Int_t gem_id = atoi(&this_key[1]);
-
+      Int_t gem_id = (this_key.Remove(0,1)).Atoi(); 
       if(proj_type=="x"){
 	bgPlane[gem_id-1]->SetID(gem_id);
 	bgPlane[gem_id-1]->AddProjectionX(bgProjection[iproj]);
-
       }
       else if(proj_type=="y")
 	bgPlane[gem_id-1]->AddProjectionY(bgProjection[iproj]);
       
     } // End Projection Loop
-    
+    vector<Double_t> gem_z ;
+    gem_z = fConfig->GetZ_GEM();
     for(int igem=0;igem<n_gem;igem++){
+      bgPlane[igem]->SetPositionZ(gem_z[igem]);
       bgPlane[igem]->Process();
       bgTracker->AddPlane(bgPlane[igem]);
     }

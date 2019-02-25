@@ -26,7 +26,7 @@ class BeamGEMPlane: public TObject{
   TString strPlaneName;
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
-
+  
   int my_id;
   //Process functions
 
@@ -60,8 +60,9 @@ class BeamGEMPlane: public TObject{
 
   inline BeamGEMProjection* GetProjectionX() const {return bgProjX;};
   inline BeamGEMProjection* GetProjectionY() const {return bgProjY;};
-
-
+  inline double GetPositionZ() const { return z_position;};
+  
+  inline void SetPositionZ(double z) { z_position=z;};
   inline void SetID(int id) { my_id = id;};
   
   void AddProjectionX( BeamGEMProjection* );

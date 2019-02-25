@@ -49,6 +49,8 @@ class BeamConfig{
   inline TString GetDBPath() const { return db_path;};
   inline TString GetRFPath() const {return rootfile_path;};
   inline vector<Int_t> GetQDCChannel() const { return qdc_channel;};
+  inline vector<Double_t> GetZ_GEM() const {return gem_position;};
+  inline vector<Double_t> GetZ_Det() const {return det_position;};
   inline Int_t GetNGEMs() const {return n_gem;};
   
   inline void SetOutputName(TString str){output_name=str;};
