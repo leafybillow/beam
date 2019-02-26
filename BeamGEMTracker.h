@@ -37,7 +37,7 @@ class BeamGEMTracker: public TObject{
   int nTracks;
   bool isGoldenTrack;
 
-  int track_flag;
+  int track_npt;
 
   TLinearFitter* lf;
   

@@ -491,7 +491,9 @@ int BeamAnalysis::Analysis(){
       bgPlane[igem]->Process();
       bgTracker->AddPlane(bgPlane[igem]);
     }
-
+    
+    bgTracker->Process();
+    
     // Loading analysis results to new branch pointer
     for(int iproj=0;iproj<nproj;iproj++){
       TString this_key = projKey[iproj];
