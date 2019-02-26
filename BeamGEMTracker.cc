@@ -94,11 +94,10 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   TVirtualPad* pad_track = c1->cd(1);
   TVirtualPad* pad_gems = c1->cd(2);
 
-  Int_t nplane =vPlanes.size();
-  pad_gems->Divide(1,nplane);
+  pad_gems->Divide(1,nPlanes);
 
   TH1D *h_buff;
-  for(int iplane =0 ;iplane<nplane;iplane++){
+  for(int iplane =0 ;iplane<nPlanes;iplane++){
     pad_gems->cd(iplane+1);
     TPad* pad_gem1_y = new TPad("pad_gem1_y","",0.0,1.0 ,0.66,0.0);
     TPad* pad_gem1_x = new TPad("pad_gem1_x","",0.66,1.0 ,1.0,0.0);
@@ -131,26 +130,34 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
 
   }
   
-  Double_t *gem_z = new Double_t[nplane];
   vector<Double_t> vec_hit_y;
   vector<Double_t> vec_hit_x;
-  vector<Double_t> vec_pos_z;
+  vector<Double_t> vec_zpos_x;
+  vector<Double_t> vec_zpos_y;
   
   vector < TBox* > box_zy;
   vector < TBox* > box_zx;
-  
-  for(int i=0;i<nplane;i++){
-    gem_z[i] = vPlanes[i]->GetPositionZ();
-    int nhits_y = (vPlanes[i]->GetPositionY()).size();
-    int nhits_x = (vPlanes[i]->GetPositionX()).size();
-    if( nhits_x>0 && nhits_y >0){
-      vec_hit_y.push_back( (vPlanes[i]->GetPositionY() )[0] );
-      vec_hit_x.push_back( (vPlanes[i]->GetPositionX() )[0] );
-      vec_pos_z.push_back( gem_z[i]);
+
+  for(int ipt=0;ipt<track_npt;ipt++){
+    int nhitx = fHit_x[ipt].size();
+    int nhity = fHit_y[ipt].size();
+
+    for(int ihit=0; ihit<nhitx;ihit++){
+      vec_hit_x.push_back( fHit_x[ipt][ihit] );
+      vec_zpos_x.push_back( fGEM_z[ipt]);
     }
-    
-    TBox *bgem_y = new TBox(gem_z[i]+2,-100.0, gem_z[i]+20, 100);
-    TBox *bgem_x = new TBox(gem_z[i]+2,-50.0, gem_z[i]+20, 50);
+
+    for(int ihit=0; ihit<nhity;ihit++){
+      vec_hit_y.push_back( fHit_y[ipt][ihit] );
+      vec_zpos_y.push_back( fGEM_z[ipt]);
+    }
+
+  }
+  
+  for(int ipl=0;ipl<nPlanes;ipl++){
+    double gem_z = vPlanes[ipl]->GetPositionZ();
+    TBox *bgem_y = new TBox(gem_z+2,-100.0, gem_z+20, 100);
+    TBox *bgem_x = new TBox(gem_z+2,-50.0, gem_z+20, 50);
     
     bgem_y->SetLineColor(8);
     bgem_x->SetLineColor(8);
@@ -160,18 +167,29 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   
   pad_track->Divide(1,2);
   pad_track->cd(1);
-  int npt = vec_pos_z.size();
-  Double_t *hit_y = new Double_t[npt];
-  Double_t *hit_x = new Double_t[npt];
-  Double_t *pos_z = new Double_t[npt];
-  if(npt>0){
-    for(int i=0;i<npt;i++){
-      hit_y[i] = vec_hit_y[i];
-      hit_x[i] = vec_hit_x[i];
-      pos_z[i] = vec_pos_z[i];
-    }
+
+  int nptx = vec_zpos_x.size();
+  int npty = vec_zpos_y.size();
+
+  Double_t *hit_x = new Double_t[nptx];
+  Double_t *zpos_x = new Double_t[nptx];
   
-    TGraph* g_zy = new TGraph(npt, pos_z, hit_y);
+  Double_t *hit_y = new Double_t[npty];
+  Double_t *zpos_y = new Double_t[npty];
+  // copy vector to array
+  if(nptx>0 && npty>0){
+    
+    for(int i=0;i<nptx;i++){
+      hit_x[i] = vec_hit_x[i];
+      zpos_x[i] = vec_zpos_x[i];
+    }
+
+    for(int i=0;i<npty;i++){
+      hit_y[i] = vec_hit_y[i];
+      zpos_y[i] = vec_zpos_y[i];
+    }
+
+    TGraph* g_zy = new TGraph(npty, zpos_y, hit_y);
     g_zy->SetMarkerSize(2);
     g_zy->SetMarkerStyle(34);
     g_zy->Draw("AP");
@@ -179,12 +197,12 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     g_zy->GetYaxis()->SetRangeUser(-110,110);
     g_zy->GetXaxis()->SetLimits(-10,850);
     
-    for(int i=0;i<nplane;i++)
+    for(int i=0;i<nPlanes;i++)
       box_zy[i]->Draw("l same");
 
   
     pad_track->cd(2);
-    TGraph* g_zx = new TGraph(npt, pos_z, hit_x);
+    TGraph* g_zx = new TGraph(nptx, zpos_x, hit_x);
     g_zx->SetMarkerSize(2);
     g_zx->SetMarkerStyle(34);
     g_zx->Draw("AP");
@@ -192,7 +210,7 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     g_zx->GetYaxis()->SetRangeUser(-105,105);
     g_zx->GetXaxis()->SetLimits(-10,850);
 
-    for(int i=0;i<nplane;i++)
+    for(int i=0;i<nPlanes;i++)
       box_zx[i]->Draw("l same");
 
   }
