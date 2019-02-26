@@ -170,10 +170,6 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   for(int iStrip= start; iStrip<end; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip);
     
-    // double delta = h_proj->GetBinContent(iStrip) - bin_content;
-    // if(delta> slope_cut) // ignore abrupt falling due to dead channels
-    //   continue; 
-     
     if(bin_content>threshold && isLock==0){
       isLock = 1;
       low= iStrip;
@@ -182,9 +178,12 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       
       if(iStrip!=end){
       	double next = h_proj->GetBinContent(iStrip+1);
-      	if(next > threshold)
+      	if(next > threshold){
+	  // h_proj->SetBinContent(iStrip, (bin_content+next)*0.5); // some dirty trick
       	  continue;
+	}
       }
+      
       isLock = 0;
       up = iStrip;
       if((up-low)>width_cut){
@@ -478,9 +477,7 @@ vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
     while(iter!=end){
       iter++;
       cur_val = h_proj->GetBinContent(iter);
-      
-      double last_val = h_proj->GetBinContent(iter-1);
-      if(last_val-cur_val > slope_cut)
+      if(cur_val ==0 ) // skip dead channel
 	continue;
       
       switch(eStatus){
