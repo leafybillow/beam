@@ -5,22 +5,78 @@
 #include "TText.h"
 #include "TBox.h"
 #include "TGraph.h"
+#include "TLinearFitter.h"
+
 ClassImp(BeamGEMTracker);
 
 BeamGEMTracker::BeamGEMTracker()
   :fSlope_zx(),fSlope_zy(),
    fTheta(),fPhi(),
-   fDet_x(),fDet_y(),
+   fDet_x(),fDet_y(),fDet_z(),
+   fGEM_z(),fHit_x(),fHit_y(),
    vPlanes(),
-   nTracks(-1),isGoldenTrack(0){
-  
-  Init();
+   nTracks(-1),isGoldenTrack(0),track_flag(1)
+{
+  lf = new TLinearFitter();
+  lf->SetFormula("pol1");
 }
 
 BeamGEMTracker::~BeamGEMTracker(){
 }
+
 void BeamGEMTracker::Init(){
+  nPlanes = vPlanes.size();
   
+  vector <double> vec_buff;
+  
+  for(int i=0;i<nPlanes;i++){
+    fGEM_z.push_back( vPlanes[i]->GetPositionZ() );
+    track_flag *= vPlanes[i]->GetNHits() ;
+
+    vec_buff = vPlanes[i]->GetPositionX();
+    fHit_x.push_back(vec_buff);
+    vec_buff = vPlanes[i]->GetPositionY();
+    fHit_y.push_back(vec_buff);
+  }
+  
+}
+
+void BeamGEMTracker::Process(){
+  Init();
+  if(track_flag == 1)
+    isGoldenTrack = FitSingleTrack(0);
+  
+}
+
+bool BeamGEMTracker::FitSingleTrack(int iHit){
+  Double_t *z = new Double_t[nPlanes]; // in z direction
+  Double_t *x = new Double_t[nPlanes];
+  Double_t *y = new Double_t[nPlanes];
+  
+  ATrack aTrack;
+  
+  for(int i=0;i<nPlanes;i++){
+    z[i] = fGEM_z[i];
+    y[i] = fHit_y[i][iHit];
+    x[i] = fHit_x[i][iHit];
+  }
+  lf->AssignData(nPlanes,1,z,x);
+  lf->Eval();
+
+  aTrack.fIntercept = lf->GetParameter(0);
+  aTrack.fSlope = lf->GetParameter(1);
+  aTrack.fChi2 = lf->GetChisquare();
+  vTrack_zx.push_back(aTrack);
+
+  lf->AssignData(nPlanes,1,z,y);
+  lf->Eval();
+
+  aTrack.fIntercept = lf->GetParameter(0);
+  aTrack.fSlope = lf->GetParameter(1);
+  aTrack.fChi2 = lf->GetChisquare();
+  vTrack_zy.push_back(aTrack);
+
+  return 1;
 }
 
 void BeamGEMTracker::PlotResults(TString runName, int ievt){
@@ -108,7 +164,7 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   
     TGraph* g_zy = new TGraph(npt, pos_z, hit_y);
     g_zy->SetMarkerSize(1);
-    g_zy->SetMarkerStyle(20);
+    g_zy->SetMarkerStyle(47);
     g_zy->Draw("AP");
     g_zy->SetTitle("");
     g_zy->GetYaxis()->SetRangeUser(-110,110);
@@ -121,7 +177,7 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     pad_track->cd(2);
     TGraph* g_zx = new TGraph(npt, pos_z, hit_x);
     g_zx->SetMarkerSize(1);
-    g_zx->SetMarkerStyle(20);
+    g_zx->SetMarkerStyle(47);
     g_zx->Draw("AP");
     g_zx->SetTitle("");
     g_zx->GetYaxis()->SetRangeUser(-105,105);
@@ -129,7 +185,10 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
 
     for(int i=0;i<nplane;i++)
       box_zx[i]->Draw("l same");
-  }  
+  }
+
+
+  
   c1->cd();
   TText *text= new TText(0.0,0.95,
 			 Form("%s-Tracker-evt-%d",runName.Data(),ievt));
@@ -145,14 +204,3 @@ void BeamGEMTracker::AddPlane(BeamGEMPlane* bgPlane){
   vPlanes.push_back(bgPlane);
 }
 
-void BeamGEMTracker::Process(){
-  // Int_t nplane = vPlanes.size();
-  // if(nplane==2){
-
-  //   Int_t nhits1 = vPlanes[0]->GetNHits();
-  //   Int_t nhits2 = vPlanes[1]->GetNHits();
-  //   if(nhits2==1 && nhits1==1){
-
-  //   }
-    
-}

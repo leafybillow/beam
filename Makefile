@@ -4,7 +4,7 @@ CXX           = $(shell $(ROOTCONFIG) --cxx)
 
 CXXFLAGS	= -O0 -Wall -Woverloaded-virtual -fPIC -Wextra
 ROOTCFLAGS:= $(shell $(ROOTCONFIG) --cflags)
-ROOTLIBS  := $(shell $(ROOTCONFIG) --libs)
+ROOTLIBS  := $(shell $(ROOTCONFIG) --libs) -lMinuit
 ROOTGLIBS := $(shell $(ROOTCONFIG) --glibs)
 ROOTINC :=$(shell $(ROOTCONFIG) --incdir)
 
