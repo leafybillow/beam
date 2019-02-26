@@ -164,23 +164,29 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   
   int low=0, up=0;
 
-  int start = edge_cut;
+  int start = edge_cut +1;
   int end = nStrips-edge_cut;
   
   for(int iStrip= start; iStrip<end; iStrip++){
-    bin_content = h_proj->GetBinContent(iStrip+1);
-    double delta = h_proj->GetBinContent(iStrip) - bin_content;
-   
-    if(delta> slope_cut) // ignore abrupt falling due to dead channels
-      continue;
+    bin_content = h_proj->GetBinContent(iStrip);
     
+    // double delta = h_proj->GetBinContent(iStrip) - bin_content;
+    // if(delta> slope_cut) // ignore abrupt falling due to dead channels
+    //   continue; 
+     
     if(bin_content>threshold && isLock==0){
       isLock = 1;
-      low= iStrip+1;
+      low= iStrip;
     }
-    if((bin_content<=threshold||iStrip==end) && isLock==1){
+    if((bin_content<=threshold || iStrip==end) && isLock==1){
+      
+      if(iStrip!=end){
+      	double next = h_proj->GetBinContent(iStrip+1);
+      	if(next > threshold)
+      	  continue;
+      }
       isLock = 0;
-      up = iStrip+1;
+      up = iStrip;
       if((up-low)>width_cut){
 	vecRange.push_back( make_pair(low,up) );
       }
@@ -188,7 +194,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
 	for(int i=low;i<up;i++)
 	  h_proj->SetBinContent(i,0);
       }
-	
+
     }
   }
   return vecRange;
