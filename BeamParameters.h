@@ -5,3 +5,4 @@ extern double split_frac;
 extern int edge_cut;
 extern int stability;
 extern double xtalk_threshold;
+extern double slope_cut;

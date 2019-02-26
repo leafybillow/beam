@@ -164,12 +164,16 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   
   int low=0, up=0;
 
-  // int edge_cut = 5; // cut out false hits at the edge
   int start = edge_cut;
   int end = nStrips-edge_cut;
   
   for(int iStrip= start; iStrip<end; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip+1);
+    double delta = h_proj->GetBinContent(iStrip) - bin_content;
+   
+    if(delta> slope_cut) // ignore abrupt falling due to dead channels
+      continue;
+    
     if(bin_content>threshold && isLock==0){
       isLock = 1;
       low= iStrip+1;
@@ -468,13 +472,19 @@ vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
     while(iter!=end){
       iter++;
       cur_val = h_proj->GetBinContent(iter);
+      
+      double last_val = h_proj->GetBinContent(iter-1);
+      if(last_val-cur_val > slope_cut)
+	continue;
+      
       switch(eStatus){
       case kFindMax:
 	if(cur_val>max_val){
 	  max_val = cur_val;
 	  max_pos = iter;
 	}
-	else if( (max_val-cur_val) >stability || iter == end){
+	else if( max_val-cur_val>stability
+		 || iter == end){
 	  eStatus = kFindMin;
 	  min_val = cur_val;
 	  peak.push_back(max_pos);
