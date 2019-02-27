@@ -7,10 +7,16 @@ class BeamGEMPlane;
 class BeamGEMProjection;
 class TLinearFitter;
 
-struct ATrack{
-  double fSlope;
-  double fIntercept;
+struct ATrace{
+  vector<double> x;
+  vector<double> y;
+  vector<double> z;
+  double fSlope_zx;
+  double fSlope_zy;
+  double fIntercept_x;
+  double fIntercept_y;
   double fChi2;
+  int myID;
 };
 
 class BeamGEMTracker: public TObject{
@@ -24,26 +30,27 @@ class BeamGEMTracker: public TObject{
   vector<double> fDet_x; //Extrapolated hits positions on detector plane
   vector<double> fDet_y; // [iDet]
   vector<double> fDet_z;
-
-  vector<ATrack> vTrack_zx;
-  vector<ATrack> vTrack_zy;
   
   vector<double> fGEM_z;
   vector< vector< double> > fHit_x; // [igem][ihit]
   vector< vector< double> > fHit_y;
   
   vector<BeamGEMPlane* > vPlanes;
+  vector< ATrace > vTraces; // vector of traces
+  
   int nPlanes;
   int nTracks;
+  
   bool isGoldenTrack;
-
+  bool isFound;
+  
   int track_npt;
 
   TLinearFitter* lf;
   
   void Init();
-  bool FitSingleTrack(int iHit);
-  
+  bool FitATrack(ATrace* aTrace);
+  void GenerateCandidates();
  public:
   BeamGEMTracker();
   ~BeamGEMTracker();

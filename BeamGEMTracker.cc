@@ -1,6 +1,8 @@
 #include "BeamGEMTracker.h"
 #include "BeamGEMPlane.h"
 #include "BeamGEMProjection.h"
+#include "BeamParameters.h"
+
 #include "TH1D.h"
 #include "TText.h"
 #include "TBox.h"
@@ -15,7 +17,7 @@ BeamGEMTracker::BeamGEMTracker()
    fTheta(),fPhi(),
    fDet_x(),fDet_y(),fDet_z(),
    fGEM_z(),fHit_x(),fHit_y(),
-   vPlanes(),
+   vPlanes(),vTraces(),
    nTracks(-1),isGoldenTrack(0),track_npt(0)
 {
   lf = new TLinearFitter();
@@ -29,11 +31,14 @@ void BeamGEMTracker::Init(){
   nPlanes = vPlanes.size();
   
   vector <double> vec_buff;
-  
+
   for(int i=0;i<nPlanes;i++){
-    Int_t nhits = vPlanes[i]->GetNHits() ;
-    if(nhits>0){
+    Int_t nhitsx = vPlanes[i]->GetProjectionX()->GetNHits() ;
+    Int_t nhitsy = vPlanes[i]->GetProjectionY()->GetNHits() ;
+    
+    if(nhitsx>0 && nhitsy>0){
       track_npt ++;
+      
       fGEM_z.push_back( vPlanes[i]->GetPositionZ() );
       
       vec_buff = vPlanes[i]->GetPositionX();
@@ -48,44 +53,70 @@ void BeamGEMTracker::Init(){
 
 void BeamGEMTracker::Process(){
   Init();
+  GenerateCandidates();
+  
   if(track_npt>=2){
-    isGoldenTrack = FitSingleTrack(0);
-    nTracks = 1;
+    vector<ATrace>::iterator it = vTraces.begin();
+    while(it!=vTraces.end()){
+      FitATrack(&(*it));
+      it++;
+    }
+    nTracks = vTraces.size();
+    if(track_npt==3)
+      isGoldenTrack=1;
   }
+  else
+    nTracks = 0;
+}
+
+void BeamGEMTracker::GenerateCandidates(){
+  ATrace aTrace ;
+  Int_t npt = fGEM_z.size();
+  
+  for(int ipt=0;ipt<npt;ipt++){
+    (aTrace.z).push_back(fGEM_z[ipt]);
+    (aTrace.x).push_back(fHit_x[ipt][0]);
+    (aTrace.y).push_back(fHit_y[ipt][0]);
+  }
+  
+  vTraces.push_back( aTrace );
   
 }
 
-bool BeamGEMTracker::FitSingleTrack(int iHit){
-  Double_t *z = new Double_t[track_npt]; // in z direction
-  Double_t *x = new Double_t[track_npt];
-  Double_t *y = new Double_t[track_npt];
+bool BeamGEMTracker::FitATrack(ATrace* aTrace){
   
-  ATrack aTrack;
+  Int_t npt = (aTrace->z).size();
+  Double_t *z = new Double_t[npt]; // in z direction
+  Double_t *x = new Double_t[npt];
+  Double_t *y = new Double_t[npt];
   
-  for(int i=0;i<track_npt;i++){
-    z[i] = fGEM_z[i];
-    y[i] = fHit_y[i][iHit];
-    x[i] = fHit_x[i][iHit];
+    
+  for(int i=0;i<npt;i++){
+    z[i] = (aTrace->z)[i];
+    y[i] = (aTrace->y)[i];
+    x[i] = (aTrace->x)[i];
   }
-
-  lf->AssignData(track_npt,1,z,y);
+  
+  lf->AssignData(npt,1,z,y);
   lf->Eval();
 
-  aTrack.fIntercept = lf->GetParameter(0);
-  aTrack.fSlope = lf->GetParameter(1);
-  aTrack.fChi2 = lf->GetChisquare();
-  vTrack_zy.push_back(aTrack);
+  aTrace->fIntercept_y = lf->GetParameter(0);
+  aTrace->fSlope_zy = lf->GetParameter(1);
+  aTrace->fChi2 = lf->GetChisquare();
   
   lf->ClearPoints();
-  lf->AssignData(track_npt,1,z,x);
+  lf->AssignData(npt,1,z,x);
   lf->Eval();
 
-  aTrack.fIntercept = lf->GetParameter(0);
-  aTrack.fSlope = lf->GetParameter(1);
-  aTrack.fChi2 = lf->GetChisquare();
-  vTrack_zx.push_back(aTrack);
-
+  aTrace->fIntercept_x = lf->GetParameter(0);
+  aTrace->fSlope_zx = lf->GetParameter(1);
+  aTrace->fChi2 += lf->GetChisquare();
+  
   return 1;
+}
+
+void BeamGEMTracker::AddPlane(BeamGEMPlane* bgPlane){
+  vPlanes.push_back(bgPlane);
 }
 
 void BeamGEMTracker::PlotResults(TString runName, int ievt){
@@ -222,14 +253,14 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     flin_zx = new TF1(Form("fzx%d",i),"pol1",-10,10e3);
     flin_zy = new TF1(Form("fzy%d",i),"pol1",-10,10e3);
 
-    par[1] = vTrack_zy[i].fSlope;
-    par[0] = vTrack_zy[i].fIntercept;
+    par[1] = vTraces[i].fSlope_zy;
+    par[0] = vTraces[i].fIntercept_y;
     flin_zy->SetParameters(par);
     pad_track->cd(1);
     flin_zy->Draw("same");
     
-    par[1] = vTrack_zx[i].fSlope;
-    par[0] = vTrack_zx[i].fIntercept;
+    par[1] = vTraces[i].fSlope_zx;
+    par[0] = vTraces[i].fIntercept_x;
     flin_zx->SetParameters(par);
     pad_track->cd(2);
     flin_zx->Draw("same");
@@ -245,9 +276,5 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
 		  runName.Data(),
 		  ievt));
   delete c1;
-}
-
-void BeamGEMTracker::AddPlane(BeamGEMPlane* bgPlane){
-  vPlanes.push_back(bgPlane);
 }
 
