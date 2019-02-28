@@ -67,6 +67,7 @@ void BeamGEMTracker::Process(){
       }
   }
   else if(track_npt>2){
+    isGoldenTrack = 1;
     int imax = effNhits[0];
     int jmax = effNhits[1];
     for(int i=0; i<imax ; i++){
@@ -94,11 +95,13 @@ void BeamGEMTracker::Process(){
 	int myID =  ((*itk).myPattern)[1];
 	SwapHits(1,myID,jmax-1);
 	jmax= jmax-1;
-
-	myID = ((*itk).myPattern)[2];
-	SwapHits(2,myID,effNhits[2]-1);
-	effNhits[2] = effNhits[2] -1;
-	
+	if(effNhits[2]>1){
+	  myID = ((*itk).myPattern)[2];
+	  SwapHits(2,myID,effNhits[2]-1);
+	  effNhits[2] = effNhits[2] -1;
+	}
+	else if(effNhits[2]==1)
+	  effNhits[2] = effNhits[2] -1;
       }
     } // End of first plane loop
   } // End of else if track_np>2 
@@ -109,14 +112,43 @@ void BeamGEMTracker::Process(){
     nTracks++;
     it++;
   }
-
+  ProjectHits(); // To detector Planes
 }
+
+void BeamGEMTracker::ProjectHits(){
+  vector<double>::iterator idetz = fDet_z.begin();
+  double slope;
+  double intercept;
+  
+  while(idetz!=fDet_z.end()){
+    vector<double> det_hitx;
+    vector<double> det_hity;
+    for(int i=0;i<nTracks;i++){
+
+      double z = *idetz;
+
+      slope = vTracks[i].fSlope_zx;
+      intercept = vTracks[i].fIntercept_x;
+      double x = slope*z +intercept;
+      slope = vTracks[i].fSlope_zy;
+      intercept = vTracks[i].fIntercept_y;
+      double y = slope*z +intercept;
+      det_hity.push_back(y);
+      det_hitx.push_back(x);
+    
+    }
+    fDet_x.push_back(det_hitx);
+    fDet_y.push_back(det_hity);
+    idetz++;
+  }
+}
+
 ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
 
   // Project from i to j
   
-  // double distance_cut = 10; // (mm)
-  double distance = 2000; // an non-sense large number
+  double distance_cut = 10; // (mm)
+  double distance = distance_cut; // an non-sense large number
   
   double z1 = fGEM_z[0];
   double z2 = fGEM_z[1];
@@ -209,7 +241,7 @@ bool BeamGEMTracker::FitATrack(ATrack* aTrack){
   aTrack->fIntercept_x = lf->GetParameter(0);
   aTrack->fSlope_zx = lf->GetParameter(1);
   aTrack->fChi2 += lf->GetChisquare();
-  
+
   return 1;
 }
 

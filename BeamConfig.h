@@ -52,6 +52,7 @@ class BeamConfig{
   inline vector<Double_t> GetZ_GEM() const {return gem_position;};
   inline vector<Double_t> GetZ_Det() const {return det_position;};
   inline Int_t GetNGEMs() const {return n_gem;};
+  inline Int_t GetNDets() const {return det_position.size() ;};
   
   inline void SetOutputName(TString str){output_name=str;};
   inline void SetInputName(TString str){input_name=str;};

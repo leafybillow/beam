@@ -328,6 +328,10 @@ int BeamAnalysis::Analysis(){
   vector <double> baseline_rms;
   vector <double> baseline_mean;
 
+  // Reconstruction Detector Hits
+  vector< vector<double> > vDet_x;
+  vector< vector<double> > vDet_y;
+
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
   double dummy_double;
@@ -345,7 +349,14 @@ int BeamAnalysis::Analysis(){
     if(iproj%2==0)
       vNhits_gem.push_back(dummy_int);
   }
-  
+
+  int ndets = fConfig->GetNDets();
+  for(int idet=0;idet<ndets ;idet++){
+    vDet_x.push_back(dummy_vec_double);
+    vDet_y.push_back(dummy_vec_double);
+  }
+  int nTracks;
+  bool isGoldenTrack;
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
@@ -370,6 +381,15 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
       tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
     }
+  }
+  
+  if(!kPlot){
+    for(int idet=0; idet<ndets;idet++){
+      tree_rec->Branch(Form("det%d_x",idet+1),&vDet_x[idet]);
+      tree_rec->Branch(Form("det%d_y",idet+1),&vDet_y[idet]);
+    }
+    tree_rec->Branch("ntracks",&nTracks);
+    tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
   }
   
   if(!kPlot){    
@@ -438,6 +458,7 @@ int BeamAnalysis::Analysis(){
 
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
+    bgTracker->SetDetZ( fConfig->GetZ_Det() );
     BeamGEMPlane* bgPlane[n_gem];// = new BeamGEMPlane*[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
@@ -495,6 +516,11 @@ int BeamAnalysis::Analysis(){
     bgTracker->Process();
     
     // Loading analysis results to new branch pointer
+    vDet_x = bgTracker->GetDetX();
+    vDet_y = bgTracker->GetDetY();
+    nTracks = bgTracker->GetNTracks();
+    isGoldenTrack = bgTracker->IsGoldenTrack();
+    
     for(int iproj=0;iproj<nproj;iproj++){
       TString this_key = projKey[iproj];
       TString proj_type = this_key[0];

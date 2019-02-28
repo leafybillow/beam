@@ -27,8 +27,8 @@ class BeamGEMTracker: public TObject{
   vector<double> fTheta;
   vector<double> fPhi;
   
-  vector<double> fDet_x; //Extrapolated hits positions on detector plane
-  vector<double> fDet_y; // [iDet]
+  vector<vector<double> > fDet_x; //Extrapolated hits positions on detector plane
+  vector<vector<double> > fDet_y; // [iDet][iTrack]
   vector<double> fDet_z;
   
   vector<double> fGEM_z;
@@ -53,11 +53,16 @@ class BeamGEMTracker: public TObject{
   ATrack GenerateCandidates(int* pattern);
   void SwapHits(int, int ,int);
   ATrack PingForward(int , int);
+  void ProjectHits();
 public:
   BeamGEMTracker();
   ~BeamGEMTracker();
 
   inline int GetNTracks() const {return nTracks;};
+  inline vector< vector<double> > GetDetX() const {return fDet_x;};
+  inline vector< vector<double> > GetDetY() const {return fDet_y;};
+  inline bool IsGoldenTrack() const {return isGoldenTrack;};
+  inline void SetDetZ( vector<Double_t> z_pos) {fDet_z = z_pos;};
   
   void Process();
   void PlotResults(TString, int);
