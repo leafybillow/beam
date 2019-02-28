@@ -5,8 +5,19 @@
 ClassImp(BeamConfig);
 using namespace std;
 
+// if not define, these parameters will be default
+double zs_threshold = 3.0;
+double width_cut=1.0;
+double width_threshold = 3.0; 
+double split_frac=0.1;
+int edge_cut = 5;
+int stability = 50;
+double xtalk_threshold = 0.1;
+double slope_cut = 900;
+
 BeamConfig::BeamConfig(){
   run_num= -1;
+  kPlot = 0;
 }
 
 BeamConfig::~BeamConfig(){
@@ -25,9 +36,6 @@ void BeamConfig::Config(){
     break;
   case 2:
     output_suffix="_rms.root";
-    break;
-  case 3:
-    output_suffix="_plots.pdf";
     break;
   }
     
@@ -80,11 +88,69 @@ int BeamConfig::ParseFile(){
       continue;
     }
     if(vecStr[0].Contains("zs_threshold")){
-      fZSThreshold = vecStr[1].Atof();
+      zs_threshold = vecStr[1].Atof();
+      fZSThreshold = zs_threshold;
       continue;
     }
+    if(vecStr[0].Contains("width_cut")){
+      width_cut = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("edge_cut")){
+      edge_cut = vecStr[1].Atoi();
+      continue;
+    }
+    if(vecStr[0].Contains("stability")){
+      stability = vecStr[1].Atoi();
+      continue;
+    }
+    if(vecStr[0].Contains("width_threshold")){
+      width_threshold = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("split_frac")){
+      split_frac = vecStr[1].Atof();
+      continue;
+    }
+    if(vecStr[0].Contains("xtalk_thresold")){
+      xtalk_threshold = vecStr[1].Atof();
+      continue;
+    }
+
+    if(vecStr[0].Contains("slope_cut")){
+      slope_cut = vecStr[1].Atof();
+      continue;
+    }
+
     if(vecStr[0].Contains("n_gem")){
       n_gem = vecStr[1].Atoi();
+      continue;
+    }
+    if(vecStr[0].Contains("gem_position")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	gem_position.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+    if(vecStr[0].Contains("det_position")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_position.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+    if(vecStr[0].Contains("qdc_channel")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	qdc_channel.push_back( (*iter).Atoi());
+	iter++;
+      }
       continue;
     }
     else{
@@ -131,5 +197,33 @@ void BeamConfig::PrintSummary(){
   cout << "--"
        << "Number of GEM planes: "  << n_gem  << endl;
   cout << "--"
-       << "Zero Suppression threshold: "  << fZSThreshold << endl;
+       << "GEM Plane Z positions (mm): ";
+  vector<Double_t>::iterator it_gem = gem_position.begin();
+  while(it_gem!=gem_position.end() ){
+    cout << *it_gem << " ";
+    it_gem++;
+  }
+  cout << endl;
+  
+  cout << "--"
+       << "Detector Plane Z positions (mm): ";
+  vector<Double_t>::iterator it_det = det_position.begin();
+  while(it_det!=det_position.end() ){
+    cout << *it_det << " ";
+    it_det++;
+  }
+  cout << endl;
+  cout << "-- Analysis Parameters" << endl; 
+  cout << "--"
+       << "Zero Suppression threshold: "  << zs_threshold << endl;
+  cout << "--"
+       << "Reject cluster not greater than: "  << width_cut << endl;
+  cout << "--"
+       << "Cut off Number of strips in the edge : "  << edge_cut << endl;
+  cout << "--"
+       << "Oversize Cluster threshold: "  << width_threshold << endl;
+  cout << "--"
+       << "Spliting Fraction threshold: "  << split_frac << endl;
+  cout << "--"
+       << "Stability (adc counts): "  << stability << endl;
 }

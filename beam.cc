@@ -1,5 +1,6 @@
 #include "BeamConfig.h"
 #include "BeamAnalysis.h"
+#include "BeamParameters.h"
 
 #include <iostream>
 
@@ -19,44 +20,55 @@ int main(int argc, char **argv){
   bool kRunTypeDefine = 0;
   bool kInputDefine = 0;
   bool kOutputDefine = 0;
-  bool kStatus  =1;
+  bool kPlot = 0;
+  bool kStatus  =0;
 
-  if(argc ==1){
+  if(argc==1){
     PrintUsage();
     return 0;
   }
-
-  for(int iarg=1;iarg<argc;iarg++){
-    if(strcmp(argv[iarg],"-h")==0){
-      PrintUsage();
-      return 0;
-    }
-    if(strcmp(argv[iarg],"-r")==0){
-      run_num = atoi(argv[++iarg]);
-      kRunNumDefine = 1;
-    }
-    else if(strcmp(argv[iarg],"-c")==0){
-      configName = argv[++iarg];
-      kConfigNameDefine =1;
-    }
-    else if(strcmp(argv[iarg],"-t")==0){
-      runType = argv[++iarg];
-      kRunTypeDefine =1;
-    }
-    else if(strcmp(argv[iarg],"-f")==0){
-      input_name = argv[++iarg];
-      kInputDefine=1;
-    }
-    else if(strcmp(argv[iarg],"-o")==0){
-      output_name = argv[++iarg];
-      kOutputDefine=1;
-    }
-    else{
+    
+  int opt;
+  while( (opt=getopt(argc,argv,":c:r:t:f:o:hP"))!=-1){
+    switch(opt){
+      
+    case ':':
+      cout << argv[optind-1]<< " requires value. " << endl;
+      kStatus = 1;
+      break;
+    case '?':
       cerr<<__FILE__<<": "
-	  <<__FUNCTION__<<": "
-	  <<"unknown flag: " << argv[iarg] <<endl;
+  	  <<__FUNCTION__<<": "
+  	  <<"unknown arguments: " << optopt <<endl;
       cerr<< "See beam -h " << endl;
-      kStatus =0;
+      kStatus = 1;
+      break;
+    case 'h':
+      PrintUsage();
+      kStatus = 1;
+      break;
+    case 'r':
+      run_num = atoi(optarg);
+      kRunNumDefine = 1;
+      break;
+    case 'c':
+      configName=optarg;
+      kConfigNameDefine=1;
+      break;
+    case 't':
+      runType=optarg;
+      kRunTypeDefine=1;
+      break;
+    case 'f':
+      input_name=optarg;
+      kInputDefine=1;
+      break;
+    case 'o':
+      output_name=optarg;
+      kOutputDefine=1;
+      break;
+    case 'P':
+      kPlot =1;
       break;
     }
   }
@@ -70,11 +82,11 @@ int main(int argc, char **argv){
 
   if(!kRunNumDefine && !kInputDefine){
     cerr<< "Fatal Error: No input data specified. See beam -h."<<endl;
-    kStatus=0;
+    kStatus=1;
   }
   else if(kRunNumDefine && kInputDefine){
     cerr<< "Fatal Error: Too many inputs defined. See beam -h."<<endl;
-    kStatus=0;
+    kStatus=1;
   }
   else if(kRunNumDefine){
     fConfig->SetRunNumber(run_num);
@@ -85,6 +97,9 @@ int main(int argc, char **argv){
 
   if(kOutputDefine)
     fConfig->SetOutputName(output_name);
+
+  if(kPlot)
+    fConfig->SetPlotMode(kPlot);
   
   int anaType =0; // ana mode by default
   if(kRunTypeDefine){
@@ -94,28 +109,25 @@ int main(int argc, char **argv){
       anaType = 1;
     else if(strcmp(runType,"rms")==0)
       anaType = 2;
-    else if(strcmp(runType,"plot")==0)
-      anaType= 3;
     else{
       cerr<<"Error: unknown analysis type.  " <<runType << endl;
       cerr<<"See beam -h"<<endl;
-      kStatus=0;
+      kStatus=1;
     }
   }
   
-  if (kStatus)
+  if(kStatus==0)
     fConfig->SetAnalysisType(anaType);
   
-  if(kStatus){
+  if(kStatus==0){
     fConfig->Config();
     BeamAnalysis *bAnalysis = new BeamAnalysis(fConfig);
     bAnalysis->Process();
-    return 0;
   }
   else{
     cerr<< "Failed to configure analysis. Aborted." <<endl;
-    return 1;
   }
+  return kStatus;
 }
 
 
@@ -124,16 +136,15 @@ void PrintUsage(){
   cout<< "Beam Test Analysis Software " << endl;
   cout<< "author : Tao Ye <tao.ye@stonybrook.edu> " << endl;
   cout << endl;  
-  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-h] " << endl;
+  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-P] [-h] " << endl;
   cout<<"Options:" << endl;
   cout<< "\t" << "-h : "
       <<"Print help info " << endl;
   cout<< "\t" << "-t <analysis_type>: "
-      <<" Optional, available options: ped, rms, ana, plot. " << endl;
-  cout << "\t -- ana: Default mode, reconstruction and  tracking analysis" << endl;
-  cout << "\t -- ped: Generate a pedestal DB file for specific run" << endl;
-  cout << "\t -- rms: Generate a pedestal RMS table file" << endl;
-  cout << "\t -- plot: output plots only, useful fo debug " << endl;
+      <<" Optional, available options: ped, rms, ana. " << endl;
+  cout << "\t \t ana : Default mode, reconstruction and  tracking analysis" << endl;
+  cout << "\t \t ped : Generate a pedestal DB file for specific run" << endl;
+  cout << "\t \t rms : Generate a pedestal RMS table file" << endl;
   
   cout<< "\t" << "-c <config_file>: "
       <<"optional, use beam.config by default " << endl;
@@ -143,5 +154,7 @@ void PrintUsage(){
       << "mandatory, if <run_num> is not specfied " << endl;
   cout<< "\t" << "-o <output_filename>: "
       <<"optional, specify output rootfile/plot name " << endl;
+  cout<< "\t" << "-P: "
+      <<" output plots ONLY, no rootfile will be created. " << endl;
   cout<< endl;
 }

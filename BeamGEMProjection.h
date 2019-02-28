@@ -47,6 +47,7 @@ struct ACluster{
   int fWidth; // A cluster width, unit: # of strips, an integer
   pair<int, int> pRange;
   int fSplit;  // if 0, no split is detected
+  vector<int> peak; // peak position;
 };
 
 struct AHit{
@@ -64,6 +65,7 @@ class BeamGEMProjection: public TObject{
   
   vector< AHit > vHits;
   vector < ACluster > vClusters;
+  Double_t charge_sum;
   int nStrips; // should be either 256 or 512 for GEMs in slac beam test
   int nHits;
   int nClusters;
@@ -91,7 +93,7 @@ class BeamGEMProjection: public TObject{
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
-  int ProcessSplitCheck(pair<int,int>);
+  vector<int> ProcessSplitCheck(pair<int,int>);
   
   void RejectCrossTalk(); 
   int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
@@ -113,10 +115,13 @@ class BeamGEMProjection: public TObject{
   ~BeamGEMProjection();
   
   inline vector< AHit> GetHits() const {return vHits;};
+  inline Double_t GetChargeSum() const { return charge_sum;};
+  
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};
-  inline TH1D* GetHistogram() const {return h_raw;};
+  inline TH1D* GetRawHist() const {return h_raw;};
+  inline TH1D* GetProjHist() const {return h_proj;};
   
   inline double GetBaselineMean() const {return baseline_mean;};
   inline double GetBaselineRMS() const {return baseline_rms;};

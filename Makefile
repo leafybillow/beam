@@ -4,7 +4,7 @@ CXX           = $(shell $(ROOTCONFIG) --cxx)
 
 CXXFLAGS	= -O0 -Wall -Woverloaded-virtual -fPIC -Wextra
 ROOTCFLAGS:= $(shell $(ROOTCONFIG) --cflags)
-ROOTLIBS  := $(shell $(ROOTCONFIG) --libs)
+ROOTLIBS  := $(shell $(ROOTCONFIG) --libs) -lMinuit
 ROOTGLIBS := $(shell $(ROOTCONFIG) --glibs)
 ROOTINC :=$(shell $(ROOTCONFIG) --incdir)
 
@@ -19,7 +19,7 @@ OBJS	:= \
 	BeamGEMProjection.o BeamGEMData.o\
 	BeamConfig.o BeamAnalysis.o
 
-HDR	:= $(OBJS:.o=.h)
+HDR	:= $(OBJS:.o=.h) BeamParameters.h
 
 all:  $(OBJS) $(BINARIES) beam_Dict libbeam beam
 

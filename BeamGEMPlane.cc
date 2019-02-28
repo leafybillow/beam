@@ -4,7 +4,7 @@
 
 ClassImp(BeamGEMPlane);
 
-BeamGEMPlane::BeamGEMPlane(TString name)
+BeamGEMPlane::BeamGEMPlane()
   :fPos_x(),fPos_y(),
    fCharge_x(),fCharge_y(),
    fWidth_x(),fWidth_y(),
@@ -12,9 +12,10 @@ BeamGEMPlane::BeamGEMPlane(TString name)
    fCorelation(),
    vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
-   bgProjX(NULL),bgProjY(NULL)
+   bgProjX(NULL),bgProjY(NULL),
+   my_id(-1)
 {  
-  strPlaneName = name;
+
 }
 BeamGEMPlane::~BeamGEMPlane(){}
 
@@ -32,8 +33,7 @@ int BeamGEMPlane::Process(){
     int nHits_x = bgProjX->GetNHits();
     int nHits_y = bgProjY->GetNHits();
     nHits = (nHits_x >= nHits_y ? nHits_x : nHits_y);
-    if(nHits == 1)
-      CollectResults();
+    CollectResults();
     return 0;
   }
   else
@@ -61,6 +61,7 @@ int BeamGEMPlane::CheckHits(){
 int BeamGEMPlane::CheckProjections(){
   TString strName_Y = bgProjY->GetProjName();
   TString strName_X = bgProjX->GetProjName();
+
   if(strName_Y.Contains("y") && strName_X.Contains("x"))
     return 0;
   else{
@@ -90,12 +91,12 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   c1->Divide(1,2);
 
   c1->cd(1);
-  bgProjY->GetHistogram()->Draw();
+  bgProjY->GetRawHist()->Draw();
 
   TVirtualPad *c2 = c1->cd(2);
   c2->Divide(2,1);
   c2->cd(1);
-  bgProjX->GetHistogram()->Draw();
+  bgProjX->GetRawHist()->Draw();
   
   c1->SaveAs(Form("%s-%s-evt-%d.png",
 		  runName.Data(),
