@@ -16,7 +16,7 @@ struct ATrack{
   double fIntercept_x;
   double fIntercept_y;
   double fChi2;
-  int myID;
+  vector<int> myPattern;
 };
 
 class BeamGEMTracker: public TObject{
@@ -50,8 +50,9 @@ class BeamGEMTracker: public TObject{
   
   void Init();
   bool FitATrack(ATrack* aTrack);
-  void GenerateCandidates(int i , int j);
-  
+  ATrack GenerateCandidates(int* pattern);
+  void SwapHits(int, int ,int);
+  ATrack PingForward(int , int);
 public:
   BeamGEMTracker();
   ~BeamGEMTracker();

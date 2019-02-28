@@ -60,47 +60,119 @@ void BeamGEMTracker::Process(){
     nTracks = 0;
   else if(track_npt==2){
     for(int i=0; i< effNhits[0]; i++)
-      for(int j=0; j < effNhits[1];j++)
-	GenerateCandidates(i,j);
-    vector<ATrack>::iterator it = vTracks.begin();
-    while(it!=vTracks.end()){
-      FitATrack(&(*it));
-      nTracks++;
-      it++;
-    }
-    cout << nTracks <<endl;
+      for(int j=0; j < effNhits[1];j++){
+	int pattern[2] = {i,j};
+	ATrack aTrack = GenerateCandidates(pattern);
+	vTracks.push_back(aTrack);
+      }
   }
-  // else if(track_npt>2){
-  //   vector<ATrack>::iterator it = vTracks.begin();
-  //   while(it!=vTracks.end()){
-  //     FitATrack(&(*it));
-  //     it++;
-  //   }
-  //   nTracks = vTracks.size();
-  //   if(track_npt==3)
-  //     isGoldenTrack=1;
-  // }
+  else if(track_npt>2){
+    int imax = effNhits[0];
+    int jmax = effNhits[1];
+    for(int i=0; i<imax ; i++){
+      vector<ATrack> vTracks_holder;
+      for(int j=0; j < jmax;j++){
+	
+	ATrack this_track = PingForward(i,j);
+	
+	if(this_track.fChi2>0)
+	  vTracks_holder.push_back(this_track);
+	
+      }// End of second plane loop
+      
+      if(vTracks_holder.size()!=0){
+	vector<ATrack>::iterator itk = vTracks_holder.begin();
+	vector<ATrack>::iterator itk_next = itk+1;
+	while(itk_next!=vTracks_holder.end()){
+	  if( (*itk_next).fChi2< (*itk).fChi2 )
+	    itk  = itk_next;
+	  itk_next++;
+	}
+	
+	vTracks.push_back(*itk);
+	int myID =  ((*itk).myPattern)[1];
+	SwapHits(1,myID,jmax-1);
+	jmax= jmax-1;
+      }
+    } // End of first plane loop
+  } // End of else if track_np>2 
+  
+  vector<ATrack>::iterator it = vTracks.begin();
+  while(it!=vTracks.end()){
+    FitATrack(&(*it));
+    nTracks++;
+    it++;
+  }
+
+}
+ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
+
+  // Project from i to j
+  
+  // double distance_cut = 10; // (mm)
+  double distance = 2000; // an non-sense large number
+  
+  double z1 = fGEM_z[0];
+  double z2 = fGEM_z[1];
+  double z3 = fGEM_z[2];
+
+  double x1 = fHit_x[0][i];
+  double x2 = fHit_x[1][j];
+  double x3 = (x1-x2)/(z1-z2)*(z3-z1)+x1;
+    
+  double y1 = fHit_y[0][i];
+  double y2 = fHit_y[1][j];
+  double y3 = (y1-y2)/(z1-z2)*(z3-z1)+y1;
+
+  if(fabs(x3)>50 || fabs(y3)>100 ){ // out of boundary
+    int pattern[3] = {i,j,0}; // the last index is a dummy
+    ATrack aTrack = GenerateCandidates(pattern);
+    aTrack.fChi2 = -1; // an invalid track
+    return aTrack;
+  }
+  int nhits = effNhits[2];
+  int idFound=0;
+  for(int ihit=0; ihit<nhits;ihit++){
+    
+    double delta_x = fabs(fHit_x[2][ihit] - x3);
+    double delta_y = fabs(fHit_y[2][ihit] - y3);
+    if(delta_x+delta_y<distance){
+      idFound = ihit;
+      distance = delta_x + delta_y;
+    }
+  }
+
+  int pattern[3] = {i,j,idFound};
+  ATrack aTrack = GenerateCandidates(pattern);
+  aTrack.fChi2 = distance;
+
+  return aTrack;
+}
+void BeamGEMTracker::SwapHits(int iplane, int i, int j){
+
+  double buff_hitx = fHit_x[iplane][i];
+  double buff_hity = fHit_y[iplane][i];
+
+  fHit_x[iplane][i] = fHit_x[iplane][j];
+  fHit_y[iplane][i] = fHit_y[iplane][j];
+
+  fHit_x[iplane][j] = buff_hitx;
+  fHit_y[iplane][j] = buff_hity;
 
 }
 
-void BeamGEMTracker::GenerateCandidates(int iHit, int jHit){
+ATrack BeamGEMTracker::GenerateCandidates(int* pattern){
   ATrack aTrack ;
   Int_t npt = fGEM_z.size();
   
-  // called this only when npt>=2
-  // vector<int> hit_pattern;
-  // hit_pattern.push_back(iHit);
-  // hit_pattern.push_back(jHit);
+  for(int ipt =0; ipt<npt; ipt++){
+    (aTrack.z).push_back(fGEM_z[ipt]);
+    (aTrack.x).push_back(fHit_x[ipt][ pattern[ipt] ]);
+    (aTrack.y).push_back(fHit_y[ipt][ pattern[ipt] ]);
 
-  (aTrack.z).push_back(fGEM_z[0]);
-  (aTrack.x).push_back(fHit_x[0][iHit]);
-  (aTrack.y).push_back(fHit_y[0][iHit]);
-  
-  (aTrack.z).push_back(fGEM_z[1]);
-  (aTrack.x).push_back(fHit_x[1][jHit]);
-  (aTrack.y).push_back(fHit_y[1][jHit]);
-  
-  vTracks.push_back( aTrack );
+    (aTrack.myPattern).push_back( pattern[ipt] );
+  }
+  return aTrack;
 }
 
 bool BeamGEMTracker::FitATrack(ATrack* aTrack){
