@@ -17,8 +17,8 @@ BeamGEMTracker::BeamGEMTracker()
    fTheta(),fPhi(),
    fDet_x(),fDet_y(),fDet_z(),
    fGEM_z(),fHit_x(),fHit_y(),
-   vPlanes(),vTraces(),
-   nTracks(-1),isGoldenTrack(0),track_npt(0)
+   vPlanes(),vTracks(),
+   nTracks(0),isGoldenTrack(0),track_npt(0)
 {
   lf = new TLinearFitter();
   lf->SetFormula("pol1");
@@ -31,16 +31,18 @@ void BeamGEMTracker::Init(){
   nPlanes = vPlanes.size();
   
   vector <double> vec_buff;
-
+  effNhits.clear();
+  
   for(int i=0;i<nPlanes;i++){
     Int_t nhitsx = vPlanes[i]->GetProjectionX()->GetNHits() ;
     Int_t nhitsy = vPlanes[i]->GetProjectionY()->GetNHits() ;
+
+    Int_t eff = (nhitsy>=nhitsx ? nhitsx:nhitsy);
     
-    if(nhitsx>0 && nhitsy>0){
+    if(eff> 0 ){
       track_npt ++;
-      
+      effNhits.push_back(eff);      
       fGEM_z.push_back( vPlanes[i]->GetPositionZ() );
-      
       vec_buff = vPlanes[i]->GetPositionX();
       fHit_x.push_back(vec_buff);
       vec_buff = vPlanes[i]->GetPositionY();
@@ -53,64 +55,82 @@ void BeamGEMTracker::Init(){
 
 void BeamGEMTracker::Process(){
   Init();
-  GenerateCandidates();
-  
-  if(track_npt>=2){
-    vector<ATrace>::iterator it = vTraces.begin();
-    while(it!=vTraces.end()){
+
+  if(track_npt<=1)
+    nTracks = 0;
+  else if(track_npt==2){
+    for(int i=0; i< effNhits[0]; i++)
+      for(int j=0; j < effNhits[1];j++)
+	GenerateCandidates(i,j);
+    vector<ATrack>::iterator it = vTracks.begin();
+    while(it!=vTracks.end()){
       FitATrack(&(*it));
+      nTracks++;
       it++;
     }
-    nTracks = vTraces.size();
-    if(track_npt==3)
-      isGoldenTrack=1;
+    cout << nTracks <<endl;
   }
-  else
-    nTracks = 0;
+  // else if(track_npt>2){
+  //   vector<ATrack>::iterator it = vTracks.begin();
+  //   while(it!=vTracks.end()){
+  //     FitATrack(&(*it));
+  //     it++;
+  //   }
+  //   nTracks = vTracks.size();
+  //   if(track_npt==3)
+  //     isGoldenTrack=1;
+  // }
+
 }
 
-void BeamGEMTracker::GenerateCandidates(){
-  ATrace aTrace ;
+void BeamGEMTracker::GenerateCandidates(int iHit, int jHit){
+  ATrack aTrack ;
   Int_t npt = fGEM_z.size();
   
-  for(int ipt=0;ipt<npt;ipt++){
-    (aTrace.z).push_back(fGEM_z[ipt]);
-    (aTrace.x).push_back(fHit_x[ipt][0]);
-    (aTrace.y).push_back(fHit_y[ipt][0]);
-  }
+  // called this only when npt>=2
+  // vector<int> hit_pattern;
+  // hit_pattern.push_back(iHit);
+  // hit_pattern.push_back(jHit);
+
+  (aTrack.z).push_back(fGEM_z[0]);
+  (aTrack.x).push_back(fHit_x[0][iHit]);
+  (aTrack.y).push_back(fHit_y[0][iHit]);
   
-  vTraces.push_back( aTrace );
+  (aTrack.z).push_back(fGEM_z[1]);
+  (aTrack.x).push_back(fHit_x[1][jHit]);
+  (aTrack.y).push_back(fHit_y[1][jHit]);
   
+  vTracks.push_back( aTrack );
 }
 
-bool BeamGEMTracker::FitATrack(ATrace* aTrace){
+bool BeamGEMTracker::FitATrack(ATrack* aTrack){
   
-  Int_t npt = (aTrace->z).size();
+  Int_t npt = (aTrack->z).size();
   Double_t *z = new Double_t[npt]; // in z direction
   Double_t *x = new Double_t[npt];
   Double_t *y = new Double_t[npt];
   
     
   for(int i=0;i<npt;i++){
-    z[i] = (aTrace->z)[i];
-    y[i] = (aTrace->y)[i];
-    x[i] = (aTrace->x)[i];
+    z[i] = (aTrack->z)[i];
+    y[i] = (aTrack->y)[i];
+    x[i] = (aTrack->x)[i];
   }
-  
+  lf->ClearPoints();
   lf->AssignData(npt,1,z,y);
   lf->Eval();
 
-  aTrace->fIntercept_y = lf->GetParameter(0);
-  aTrace->fSlope_zy = lf->GetParameter(1);
-  aTrace->fChi2 = lf->GetChisquare();
+  aTrack->fIntercept_y = lf->GetParameter(0);
+  aTrack->fSlope_zy = lf->GetParameter(1);
+  aTrack->fChi2 = lf->GetChisquare();
   
   lf->ClearPoints();
   lf->AssignData(npt,1,z,x);
   lf->Eval();
 
-  aTrace->fIntercept_x = lf->GetParameter(0);
-  aTrace->fSlope_zx = lf->GetParameter(1);
-  aTrace->fChi2 += lf->GetChisquare();
+  aTrack->fIntercept_x = lf->GetParameter(0);
+  aTrack->fSlope_zx = lf->GetParameter(1);
+  aTrack->fChi2 += lf->GetChisquare();
   
   return 1;
 }
@@ -248,24 +268,37 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   
   TF1 *flin_zx;
   TF1 *flin_zy;
+  
+  vector<TF1*> vlin_zx;
+  vector<TF1*> vlin_zy;
+  
   double par[2];  
   for(int i=0;i<nTracks;i++){
     flin_zx = new TF1(Form("fzx%d",i),"pol1",-10,10e3);
     flin_zy = new TF1(Form("fzy%d",i),"pol1",-10,10e3);
 
-    par[1] = vTraces[i].fSlope_zy;
-    par[0] = vTraces[i].fIntercept_y;
+    par[1] = vTracks[i].fSlope_zy;
+    par[0] = vTracks[i].fIntercept_y;
     flin_zy->SetParameters(par);
-    pad_track->cd(1);
-    flin_zy->Draw("same");
-    
-    par[1] = vTraces[i].fSlope_zx;
-    par[0] = vTraces[i].fIntercept_x;
-    flin_zx->SetParameters(par);
-    pad_track->cd(2);
-    flin_zx->Draw("same");
-  }
 
+    if(track_npt == 2)
+      flin_zy->SetLineStyle(2);
+    vlin_zy.push_back(flin_zy);
+    
+    par[1] = vTracks[i].fSlope_zx;
+    par[0] = vTracks[i].fIntercept_x;
+    flin_zx->SetParameters(par);
+
+    if(track_npt == 2)
+      flin_zx->SetLineStyle(2);
+    vlin_zx.push_back(flin_zx);
+  }
+  for(int i=0;i<nTracks;i++){
+    pad_track->cd(1);
+    vlin_zy[i]->Draw("same");
+    pad_track->cd(2);
+    vlin_zx[i]->Draw("same");
+  }
   
   c1->cd();
   TText *text= new TText(0.0,0.95,

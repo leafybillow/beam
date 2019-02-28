@@ -7,7 +7,7 @@ class BeamGEMPlane;
 class BeamGEMProjection;
 class TLinearFitter;
 
-struct ATrace{
+struct ATrack{
   vector<double> x;
   vector<double> y;
   vector<double> z;
@@ -34,9 +34,9 @@ class BeamGEMTracker: public TObject{
   vector<double> fGEM_z;
   vector< vector< double> > fHit_x; // [igem][ihit]
   vector< vector< double> > fHit_y;
-  
+  vector< int > effNhits; 
   vector<BeamGEMPlane* > vPlanes;
-  vector< ATrace > vTraces; // vector of traces
+  vector< ATrack > vTracks; // vector of traces
   
   int nPlanes;
   int nTracks;
@@ -44,14 +44,15 @@ class BeamGEMTracker: public TObject{
   bool isGoldenTrack;
   bool isFound;
   
-  int track_npt;
+  int track_npt; // number of planes available for tracking
 
   TLinearFitter* lf;
   
   void Init();
-  bool FitATrack(ATrace* aTrace);
-  void GenerateCandidates();
- public:
+  bool FitATrack(ATrack* aTrack);
+  void GenerateCandidates(int i , int j);
+  
+public:
   BeamGEMTracker();
   ~BeamGEMTracker();
 
