@@ -59,6 +59,7 @@ void BeamGEMTracker::Process(){
   if(track_npt<=1)
     nTracks = 0;
   else if(track_npt==2){
+    isGoldenTrack = 0;
     for(int i=0; i< effNhits[0]; i++)
       for(int j=0; j < effNhits[1];j++){
 	int pattern[2] = {i,j};
@@ -162,14 +163,16 @@ ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
   double y2 = fHit_y[1][j];
   double y3 = (y1-y2)/(z1-z2)*(z3-z1)+y1;
 
+  ATrack aTrack;
   if(fabs(x3)>50 || fabs(y3)>100 ){ // out of boundary
     int pattern[3] = {i,j,0}; // the last index is a dummy
-    ATrack aTrack = GenerateCandidates(pattern);
+    aTrack = GenerateCandidates(pattern);
     aTrack.fChi2 = -1; // an invalid track
     return aTrack;
   }
   int nhits = effNhits[2];
   int idFound=0;
+  int isFound=0;
   for(int ihit=0; ihit<nhits;ihit++){
     
     double delta_x = fabs(fHit_x[2][ihit] - x3);
@@ -177,13 +180,20 @@ ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
     if(delta_x+delta_y<distance){
       idFound = ihit;
       distance = delta_x + delta_y;
+      isFound = 1;
     }
   }
-  
-  int pattern[3] = {i,j,idFound};
-  ATrack aTrack = GenerateCandidates(pattern);
-  aTrack.fChi2 = distance;
-  
+  if(isFound){
+    int pattern[3] = {i,j,idFound};
+    aTrack = GenerateCandidates(pattern);
+    aTrack.fChi2 = distance;
+  }
+  else{
+    int pattern[3] = {i,j,0};
+    aTrack = GenerateCandidates(pattern);
+    aTrack.fChi2 = -1;
+  }
+    
   return aTrack;
 }
 void BeamGEMTracker::SwapHits(int iplane, int i, int j){
