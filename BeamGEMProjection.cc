@@ -167,7 +167,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   int start = edge_cut +1;
   int end = nStrips-edge_cut;
   
-  for(int iStrip= start; iStrip<end; iStrip++){
+  for(int iStrip= start; iStrip<=end; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip);
     
     if(bin_content>threshold && isLock==0){
@@ -190,7 +190,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
 	vecRange.push_back( make_pair(low,up) );
       }
       else{
-	for(int i=low;i<up;i++)
+	for(int i=low;i<=up;i++)
 	  h_proj->SetBinContent(i,0);
       }
 
@@ -207,7 +207,7 @@ double BeamGEMProjection::ProcessCentroid( pair<int,int> prRange){
   double total_charge = h_proj->Integral(low,up);
   double moment =0;  // sum of q*x
   double q,x;
-  for(int ibin=low;ibin<up;ibin++){
+  for(int ibin=low;ibin<=up;ibin++){
     q = h_proj->GetBinContent(ibin);
     x = h_proj->GetBinCenter(ibin);
     moment+=q*x;

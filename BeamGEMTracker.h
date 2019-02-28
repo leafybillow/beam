@@ -8,9 +8,15 @@ class BeamGEMProjection;
 class TLinearFitter;
 
 struct ATrack{
-  double fSlope;
-  double fIntercept;
+  vector<double> x;
+  vector<double> y;
+  vector<double> z;
+  double fSlope_zx;
+  double fSlope_zy;
+  double fIntercept_x;
+  double fIntercept_y;
   double fChi2;
+  vector<int> myPattern;
 };
 
 class BeamGEMTracker: public TObject{
@@ -21,34 +27,42 @@ class BeamGEMTracker: public TObject{
   vector<double> fTheta;
   vector<double> fPhi;
   
-  vector<double> fDet_x; //Extrapolated hits positions on detector plane
-  vector<double> fDet_y; // [iDet]
+  vector<vector<double> > fDet_x; //Extrapolated hits positions on detector plane
+  vector<vector<double> > fDet_y; // [iDet][iTrack]
   vector<double> fDet_z;
-
-  vector<ATrack> vTrack_zx;
-  vector<ATrack> vTrack_zy;
   
   vector<double> fGEM_z;
   vector< vector< double> > fHit_x; // [igem][ihit]
   vector< vector< double> > fHit_y;
-  
+  vector< int > effNhits; 
   vector<BeamGEMPlane* > vPlanes;
+  vector< ATrack > vTracks; // vector of traces
+  
   int nPlanes;
   int nTracks;
+  
   bool isGoldenTrack;
-
-  int track_npt;
+  bool isFound;
+  
+  int track_npt; // number of planes available for tracking
 
   TLinearFitter* lf;
   
   void Init();
-  bool FitSingleTrack(int iHit);
-  
- public:
+  bool FitATrack(ATrack* aTrack);
+  ATrack GenerateCandidates(int* pattern);
+  void SwapHits(int, int ,int);
+  ATrack PingForward(int , int);
+  void ProjectHits();
+public:
   BeamGEMTracker();
   ~BeamGEMTracker();
 
   inline int GetNTracks() const {return nTracks;};
+  inline vector< vector<double> > GetDetX() const {return fDet_x;};
+  inline vector< vector<double> > GetDetY() const {return fDet_y;};
+  inline bool IsGoldenTrack() const {return isGoldenTrack;};
+  inline void SetDetZ( vector<Double_t> z_pos) {fDet_z = z_pos;};
   
   void Process();
   void PlotResults(TString, int);
