@@ -90,9 +90,15 @@ void BeamGEMTracker::Process(){
 	}
 	
 	vTracks.push_back(*itk);
+	//swap out picked points
 	int myID =  ((*itk).myPattern)[1];
 	SwapHits(1,myID,jmax-1);
 	jmax= jmax-1;
+
+	myID = ((*itk).myPattern)[2];
+	SwapHits(2,myID,effNhits[2]-1);
+	effNhits[2] = effNhits[2] -1;
+	
       }
     } // End of first plane loop
   } // End of else if track_np>2 
@@ -141,11 +147,11 @@ ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
       distance = delta_x + delta_y;
     }
   }
-
+  
   int pattern[3] = {i,j,idFound};
   ATrack aTrack = GenerateCandidates(pattern);
   aTrack.fChi2 = distance;
-
+  
   return aTrack;
 }
 void BeamGEMTracker::SwapHits(int iplane, int i, int j){
