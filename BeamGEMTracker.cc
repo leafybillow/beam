@@ -9,6 +9,7 @@
 #include "TGraph.h"
 #include "TLinearFitter.h"
 #include "TF1.h"
+#include "TMath.h"
 
 ClassImp(BeamGEMTracker);
 
@@ -118,28 +119,43 @@ void BeamGEMTracker::Process(){
 
 void BeamGEMTracker::ProjectHits(){
   vector<double>::iterator idetz = fDet_z.begin();
-  double slope;
+  double slope_zx, slope_zy;
   double intercept;
   
   while(idetz!=fDet_z.end()){
     vector<double> det_hitx;
     vector<double> det_hity;
+    vector<double> det_theta;
+    vector<double> det_phi;
     for(int i=0;i<nTracks;i++){
 
       double z = *idetz;
 
-      slope = vTracks[i].fSlope_zx;
+      slope_zx = vTracks[i].fSlope_zx;
       intercept = vTracks[i].fIntercept_x;
-      double x = slope*z +intercept;
-      slope = vTracks[i].fSlope_zy;
+      double x = slope_zx*z +intercept;
+      slope_zy = vTracks[i].fSlope_zy;
       intercept = vTracks[i].fIntercept_y;
-      double y = slope*z +intercept;
+      double y = slope_zy*z +intercept;
       det_hity.push_back(y);
       det_hitx.push_back(x);
+
+      double tan_theta = TMath::Sqrt( slope_zx*slope_zx + slope_zy* slope_zy);
+      double theta = TMath::ATan( tan_theta) * TMath::RadToDeg();
+      if (slope_zy>0)
+	theta = -theta;
+      det_theta.push_back(theta);
+
+      double tan_phi = slope_zy/slope_zx;
+      double phi = TMath::ATan(tan_phi)*TMath::RadToDeg();
+      det_phi.push_back(phi);
     
     }
     fDet_x.push_back(det_hitx);
     fDet_y.push_back(det_hity);
+    
+    fDet_theta.push_back(det_theta);
+    fDet_phi.push_back(det_phi);
     idetz++;
   }
 }

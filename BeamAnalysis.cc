@@ -331,6 +331,8 @@ int BeamAnalysis::Analysis(){
   // Reconstruction Detector Hits
   vector< vector<double> > vDet_x;
   vector< vector<double> > vDet_y;
+  vector< vector<double> > vDet_theta;
+  vector< vector<double> > vDet_phi;
 
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
@@ -354,6 +356,9 @@ int BeamAnalysis::Analysis(){
   for(int idet=0;idet<ndets ;idet++){
     vDet_x.push_back(dummy_vec_double);
     vDet_y.push_back(dummy_vec_double);
+    vDet_theta.push_back(dummy_vec_double);
+    vDet_phi.push_back(dummy_vec_double);
+
   }
   int nTracks;
   bool isGoldenTrack;
@@ -387,6 +392,8 @@ int BeamAnalysis::Analysis(){
     for(int idet=0; idet<ndets;idet++){
       tree_rec->Branch(Form("det%d_x",idet+1),&vDet_x[idet]);
       tree_rec->Branch(Form("det%d_y",idet+1),&vDet_y[idet]);
+      tree_rec->Branch(Form("det%d_theta",idet+1),&vDet_theta[idet]);
+      tree_rec->Branch(Form("det%d_phi",idet+1),&vDet_phi[idet]);
     }
     tree_rec->Branch("ntracks",&nTracks);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
@@ -518,6 +525,8 @@ int BeamAnalysis::Analysis(){
     // Loading analysis results to new branch pointer
     vDet_x = bgTracker->GetDetX();
     vDet_y = bgTracker->GetDetY();
+    vDet_theta = bgTracker->GetDetTheta();
+    vDet_phi = bgTracker->GetDetPhi();
     nTracks = bgTracker->GetNTracks();
     isGoldenTrack = bgTracker->IsGoldenTrack();
     
