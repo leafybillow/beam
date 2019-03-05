@@ -2,6 +2,7 @@
 #include "BeamGEMPlane.h"
 #include "BeamGEMProjection.h"
 #include "BeamParameters.h"
+#include "BeamConfig.h"
 
 #include "TH1D.h"
 #include "TText.h"
@@ -9,6 +10,7 @@
 #include "TGraph.h"
 #include "TLinearFitter.h"
 #include "TF1.h"
+#include "TMath.h"
 
 ClassImp(BeamGEMTracker);
 
@@ -118,28 +120,43 @@ void BeamGEMTracker::Process(){
 
 void BeamGEMTracker::ProjectHits(){
   vector<double>::iterator idetz = fDet_z.begin();
-  double slope;
+  double slope_zx, slope_zy;
   double intercept;
   
   while(idetz!=fDet_z.end()){
     vector<double> det_hitx;
     vector<double> det_hity;
+    vector<double> det_theta;
+    vector<double> det_phi;
     for(int i=0;i<nTracks;i++){
 
       double z = *idetz;
 
-      slope = vTracks[i].fSlope_zx;
+      slope_zx = vTracks[i].fSlope_zx;
       intercept = vTracks[i].fIntercept_x;
-      double x = slope*z +intercept;
-      slope = vTracks[i].fSlope_zy;
+      double x = slope_zx*z +intercept;
+      slope_zy = vTracks[i].fSlope_zy;
       intercept = vTracks[i].fIntercept_y;
-      double y = slope*z +intercept;
+      double y = slope_zy*z +intercept;
       det_hity.push_back(y);
       det_hitx.push_back(x);
+
+      double tan_theta = TMath::Sqrt( slope_zx*slope_zx + slope_zy* slope_zy);
+      double theta = TMath::ATan( tan_theta) * TMath::RadToDeg();
+      if (slope_zy>0)
+	theta = -theta;
+      det_theta.push_back(theta);
+
+      double tan_phi = slope_zy/slope_zx;
+      double phi = TMath::ATan(tan_phi)*TMath::RadToDeg();
+      det_phi.push_back(phi);
     
     }
     fDet_x.push_back(det_hitx);
     fDet_y.push_back(det_hity);
+    
+    fDet_theta.push_back(det_theta);
+    fDet_phi.push_back(det_phi);
     idetz++;
   }
 }
@@ -309,6 +326,9 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   vector < TBox* > box_zy;
   vector < TBox* > box_zx;
 
+  vector< TBox* > box_det_zy;
+  vector< TBox* > box_det_zx;
+  
   for(int ipt=0;ipt<track_npt;ipt++){
     int nhitx = fHit_x[ipt].size();
     int nhity = fHit_y[ipt].size();
@@ -323,6 +343,30 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       vec_zpos_y.push_back( fGEM_z[ipt]);
     }
 
+  }
+
+  int nDets = fDet_z.size();
+  for(int iDet =0 ; iDet<nDets; iDet++){
+    double pos_z = fDet_z[iDet];
+    double thickness = fDet_thickness[iDet];
+    double width_x = fDet_width_x[iDet];
+    double width_y = fDet_width_y[iDet];
+
+    double pos_x = fDet_pos_x[iDet];
+    double pos_y = fDet_pos_y[iDet];
+
+    TBox *bDet_zy = new TBox( pos_z-thickness/2.0, pos_y - width_y/2.0,
+			      pos_z+thickness/2.0, pos_y + width_y/2.0);
+    TBox *bDet_zx = new TBox( pos_z-thickness/2.0, pos_x - width_x/2.0,
+			      pos_z+thickness/2.0, pos_x + width_x/2.0);
+    bDet_zx->SetFillColor(kRed);
+    bDet_zx->SetFillStyle(3144);
+    bDet_zy->SetFillColor(kRed);
+    bDet_zy->SetFillStyle(3144);
+
+
+    box_det_zx.push_back(bDet_zx);
+    box_det_zy.push_back(bDet_zy);
   }
   
   for(int ipl=0;ipl<nPlanes;ipl++){
@@ -384,6 +428,13 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     for(int i=0;i<nPlanes;i++)
       box_zx[i]->Draw("l same");
 
+    for(int idet=0; idet<nDets;idet++){
+      pad_track->cd(1);
+      box_det_zy[idet]->Draw("same");
+      pad_track->cd(2);
+      box_det_zx[idet]->Draw("same");
+
+    }
   }
   
   TF1 *flin_zx;
@@ -431,3 +482,14 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   delete c1;
 }
 
+void BeamGEMTracker::LoadDetectorGeometry(BeamConfig *fConfig){
+ 
+  fDet_z = fConfig->GetZ_Det();
+  fDet_pos_x = fConfig->GetPositionX_Det();
+  fDet_pos_y = fConfig->GetPositionY_Det();
+
+  fDet_width_x = fConfig->GetWidthX_Det();
+  fDet_width_y = fConfig->GetWidthY_Det();
+  fDet_thickness = fConfig->GetThickness_Det();
+
+}

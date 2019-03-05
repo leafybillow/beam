@@ -29,6 +29,10 @@ class BeamGEMTracker: public TObject{
   
   vector<vector<double> > fDet_x; //Extrapolated hits positions on detector plane
   vector<vector<double> > fDet_y; // [iDet][iTrack]
+
+  vector<vector<double> > fDet_theta; //Extrapolated angle on detector plane
+  vector<vector<double> > fDet_phi; // [iDet][iTrack]
+
   vector<double> fDet_z;
   
   vector<double> fGEM_z;
@@ -61,6 +65,9 @@ public:
   inline int GetNTracks() const {return nTracks;};
   inline vector< vector<double> > GetDetX() const {return fDet_x;};
   inline vector< vector<double> > GetDetY() const {return fDet_y;};
+  inline vector< vector<double> > GetDetTheta() const {return fDet_theta;};
+  inline vector< vector<double> > GetDetPhi() const {return fDet_phi;};
+
   inline bool IsGoldenTrack() const {return isGoldenTrack;};
   inline void SetDetZ( vector<Double_t> z_pos) {fDet_z = z_pos;};
   
