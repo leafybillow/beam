@@ -465,8 +465,8 @@ int BeamAnalysis::Analysis(){
 
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
-    bgTracker->SetDetZ( fConfig->GetZ_Det() );
-    BeamGEMPlane* bgPlane[n_gem];// = new BeamGEMPlane*[n_gem];
+    bgTracker->LoadDetectorGeometry( fConfig );
+    BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
     for(int igem=0;igem<n_gem;igem++){
