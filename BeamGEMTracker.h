@@ -5,6 +5,7 @@
 using namespace std;
 class BeamGEMPlane;
 class BeamGEMProjection;
+class BeamConfig;
 class TLinearFitter;
 
 struct ATrack{
@@ -34,7 +35,12 @@ class BeamGEMTracker: public TObject{
   vector<vector<double> > fDet_phi; // [iDet][iTrack]
 
   vector<double> fDet_z;
-  
+  vector<double> fDet_pos_x;
+  vector<double> fDet_pos_y;
+  vector<double> fDet_width_x;
+  vector<double> fDet_width_y;
+  vector<double> fDet_thickness;
+  // To-do  vector<double> rotation;
   vector<double> fGEM_z;
   vector< vector< double> > fHit_x; // [igem][ihit]
   vector< vector< double> > fHit_y;
@@ -69,7 +75,8 @@ public:
   inline vector< vector<double> > GetDetPhi() const {return fDet_phi;};
 
   inline bool IsGoldenTrack() const {return isGoldenTrack;};
-  inline void SetDetZ( vector<Double_t> z_pos) {fDet_z = z_pos;};
+
+  void LoadDetectorGeometry(BeamConfig* fConfig);
   
   void Process();
   void PlotResults(TString, int);

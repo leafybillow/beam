@@ -27,7 +27,15 @@ class BeamConfig{
 
   Int_t n_gem;
   vector<Double_t> gem_position;
-  vector<Double_t> det_position;
+  
+  vector<Double_t> det_position_z;
+  vector<Double_t> det_position_x;
+  vector<Double_t> det_position_y;
+
+  vector<Double_t> det_width_x;
+  vector<Double_t> det_width_y;
+  vector<Double_t> det_thickness;
+  
   vector<Int_t> qdc_channel;
   
   int ParseFile();
@@ -50,9 +58,17 @@ class BeamConfig{
   inline TString GetRFPath() const {return rootfile_path;};
   inline vector<Int_t> GetQDCChannel() const { return qdc_channel;};
   inline vector<Double_t> GetZ_GEM() const {return gem_position;};
-  inline vector<Double_t> GetZ_Det() const {return det_position;};
+  inline vector<Double_t> GetZ_Det() const {return det_position_z;};
+  
+  inline vector<Double_t> GetWidthX_Det() const {return det_width_x;};
+  inline vector<Double_t> GetWidthY_Det() const {return det_width_y;};
+  inline vector<Double_t> GetPositionX_Det() const {return det_position_x;};
+  inline vector<Double_t> GetPositionY_Det() const {return det_position_y;};
+
+  inline vector<Double_t> GetThickness_Det() const {return det_thickness;};
+  
   inline Int_t GetNGEMs() const {return n_gem;};
-  inline Int_t GetNDets() const {return det_position.size() ;};
+  inline Int_t GetNDets() const {return det_position_z.size() ;};
   
   inline void SetOutputName(TString str){output_name=str;};
   inline void SetInputName(TString str){input_name=str;};
