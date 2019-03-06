@@ -19,6 +19,7 @@ BeamGEMTracker::BeamGEMTracker()
    fTheta(),fPhi(),
    fDet_x(),fDet_y(),fDet_z(),
    fGEM_z(),fHit_x(),fHit_y(),
+   qdc_value(0),
    vPlanes(),vTracks(),
    nTracks(0),isGoldenTrack(0),track_npt(0)
 {
@@ -472,8 +473,12 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   }
   
   c1->cd();
+  TString qdc_text = "QDC:";
+  qdc_text += Form("%d \t ", (int)qdc_value);
+  
   TText *text= new TText(0.0,0.95,
-			 Form("%s-Tracker-evt-%d",runName.Data(),ievt));
+			 Form("%s-Tracker-evt-%d, %s",
+			      runName.Data(),ievt, qdc_text.Data() ));
   text->Draw("same");
   
   c1->SaveAs(Form("%s-Tracker-evt-%d.png",

@@ -367,26 +367,25 @@ int BeamAnalysis::Analysis(){
   Int_t n_qdc_ch = vec_qdc_ch.size();
   Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
   Double_t *det_qdc_hr = new Double_t[n_qdc_ch];
-  
+
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   // Reconstructed Tree
   tree_rec = new TTree("Rec","Rec");
 
-  if(!kPlot){
-    for(int iqdc=0;iqdc<n_qdc_ch;iqdc++){
+  for(int iqdc=0;iqdc<n_qdc_ch;iqdc++){
 
-      Int_t qdc_ch = vec_qdc_ch[iqdc];
-      TString lrqdc_name = Form("sbs.sbuscint.ladc%d",qdc_ch);
-      TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
-      tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
-      tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
-      //   ||     ||
-      // This is a bridge
-      //   ||     ||
-      tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
-      tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
-    }
+    Int_t qdc_ch = vec_qdc_ch[iqdc];
+    TString lrqdc_name = Form("sbs.sbuscint.ladc%d",qdc_ch);
+    TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
+    tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
+    tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
+    //   ||     ||
+    // This is a bridge
+    //   ||     ||
+    tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
+    tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
   }
+
   
   if(!kPlot){
     for(int idet=0; idet<ndets;idet++){
@@ -466,6 +465,7 @@ int BeamAnalysis::Analysis(){
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     bgTracker->LoadDetectorGeometry( fConfig );
+    bgTracker->LoadQDC(det_qdc_hr[0]);
     BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
