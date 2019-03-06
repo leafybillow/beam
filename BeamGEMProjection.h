@@ -20,7 +20,7 @@ const int lower_neighbor[128]=
    80,81,82,83,84,85,86,87,
    88,89,90,91,92,93,94,95}; // [istrip]
 
-const int higher_neighbor[128]=
+const int upper_neighbor[128]=
   {32,33,34,35,36,37,38,39,
    40,41,42,43,44,45,46,47,
    48,49,50,51,52,53,54,55,
@@ -42,12 +42,9 @@ const int higher_neighbor[128]=
 using namespace std;
 
 struct ACluster{
-  double fPosition; // Cluster position in this projection, unit:mm
-  double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
-  int fWidth; // A cluster width, unit: # of strips, an integer
   pair<int, int> pRange;
   int fSplit;  // if 0, no split is detected
-  vector<int> peak; // peak position;
+  vector<int> valley; // valley position;
 };
 
 struct AHit{
@@ -55,6 +52,7 @@ struct AHit{
   double fCharge; // amount of charge integrated over this hit, unit: adc
   double fRes;  // spatial resolution of this hit, unit um
   int fWidth; // A single hit width, unit: # of strips, an integer
+  pair<int, int> pRange;
 };
   
 class BeamGEMStrip;
@@ -89,15 +87,14 @@ class BeamGEMProjection: public TObject{
   // Coarse Process for Clusters
   int CoarseProcess();
   vector< pair<int,int> > SearchClusters();
-  void SortClusters();
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
-  vector<int> ProcessSplitCheck(pair<int,int>);
-  
+  vector<int> FindValleys(pair<int,int>);
+
+  void ErasePeakFromHist(AHit aHit);
   void RejectCrossTalk(); 
-  int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
-  // int TestCrossTalk_v1(int iHit1, int iHit2);
+  int TestCrossTalk(AHit i, AHit j); // 1 : suspected as a cross talk pair; if 0: it is not
 
   // Fine Process for Hits
   int FineProcess();

@@ -67,8 +67,6 @@ int BeamGEMProjection::CoarseProcess(){
   overall_mean = CalculateMean(vStat);
   overall_rms = CalculateRMS(vStat);
   overall_rms = sqrt(pow(overall_rms,2) - pow(overall_mean,2));
-
-  charge_sum =0;
   
   if(CheckNStrips()==1){ // if it fails to match nstrip
     cerr<< "Failed to match NStrip"<< endl;
@@ -80,79 +78,68 @@ int BeamGEMProjection::CoarseProcess(){
       nClusters = vecRange.size();
       for(int iCluster=0; iCluster <nClusters;iCluster++){
 	ACluster aCluster;
-	aCluster.fCharge = ProcessCharge( vecRange[iCluster]);
-	aCluster.fPosition = ProcessCentroid( vecRange[iCluster]);
-	aCluster.fWidth = ProcessWidth(vecRange[iCluster]);
-	aCluster.peak =  ProcessSplitCheck(vecRange[iCluster]);
-	if( (aCluster.peak).size()<=1)
-	  aCluster.fSplit = 0;
-	else
-	  aCluster.fSplit = (aCluster.peak).size()-1;
-	
+	aCluster.valley =  FindValleys(vecRange[iCluster]);
+	aCluster.fSplit = (aCluster.valley).size();
 	aCluster.pRange = vecRange[iCluster];
 	  
 	vClusters.push_back( aCluster);
-	charge_sum += aCluster.fCharge;
       }
-      SortClusters();
-      RejectCrossTalk();
-      // update number of clusters after cross talk rejection
       nClusters = vClusters.size();
     }// Pass if h_proj has non-zero entries
     else
       nClusters = 0;
 
-    // summarize nHits counting splitting peaks
-    nHits = nClusters;
-    for(int iCluster =0; iCluster<nClusters;iCluster++){
-      nHits += vClusters[iCluster].fSplit;
-    }
-    
-    if(nClusters==0)
-      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found",
-			     strProjName.Data(),
-			     nClusters));
-    else if(nClusters>0)
-      h_raw->SetTitle( Form("Projection %s ,  %d Cluster(s) Found, %d Hit(s) Identified",
-			     strProjName.Data(),
-			     nClusters,
-			     nHits));
     return 0; // OK
   } // Pass CheckNStrips()
 }
 int BeamGEMProjection::FineProcess(){
   vHits.clear();
+  charge_sum = 0;
+  
   std::vector< ACluster>::iterator it = vClusters.begin();
   while(it!=vClusters.end()){
     AHit aHit;
-    if( (*it).fSplit==0){
-      aHit.fPosition = (*it).fPosition;
-      aHit.fCharge = (*it).fCharge;
-      aHit.fWidth = (*it).fWidth;
-      //aHit.fRes = ProcessResolution((*it).pRange);
-      vHits.push_back(aHit);
-    }
+    pair<int,int> pair_range =(*it).pRange;
+    pair<int,int> pair_buff;
+    vector< pair<int, int> > vec_range ;
+    // split one pair to multiplets depending on splitting level
+    int nSplit = (*it).fSplit;
+    int low = pair_range.first;
+    if (nSplit==0)
+      vec_range.push_back(pair_range);
     else{
-      int npeaks = (*it).fSplit+1;
-      double sum = 0;
-      for(int i=0; i<npeaks;i++){
-    	int ibin = (*it).peak[i];
-    	sum += h_proj->GetBinContent(ibin);
+      for(int isplit=0;isplit<nSplit;isplit++){
+	pair_buff = make_pair(low,((*it).valley)[isplit]);
+	low = ((*it).valley)[isplit];
+	vec_range.push_back(pair_buff);
       }
-      for(int i=0; i<npeaks;i++){
-    	int ibin = (*it).peak[i];
-    	double peak_val = h_proj->GetBinContent(ibin);
-    	double ratio = peak_val/sum;
-    	//FIXME: Now isolate multiple hits according to peak height
-    	aHit.fPosition = h_proj->GetBinCenter(ibin);
-    	aHit.fCharge = ((*it).fCharge)*ratio;
-    	aHit.fWidth = ((*it).fWidth)*ratio;
-    	vHits.push_back(aHit);
-      }
+      pair_buff = make_pair(low,pair_range.second);
+      vec_range.push_back(pair_buff);
+    }
+      
+    vector< pair<int,int> >::iterator it_pair = vec_range.begin();
+    while( it_pair!= vec_range.end() ){
+      aHit.fPosition = ProcessCentroid( *it_pair);
+      aHit.fCharge = ProcessCharge( *it_pair);
+      aHit.fWidth = ProcessWidth( *it_pair);
+      aHit.fRes = ProcessResolution(*it_pair);
+      aHit.pRange = *it_pair;
+      charge_sum += aHit.fCharge;
+      vHits.push_back(aHit);
+      it_pair++;
     }
     it++;
   }
   SortHits();
+  RejectCrossTalk();
+
+  // summarize nHits counting splitting peaks
+  nHits = vHits.size();
+ 
+  h_raw->SetTitle( Form("Projection %s ,  %d Hit(s) Found",
+			strProjName.Data(),
+			nHits));
+
   return 0 ;
 }
 vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
@@ -236,26 +223,6 @@ double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
   res = res/ width; 
   return res;
 }
-void BeamGEMProjection::SortClusters(){
-  // Sort Cluster by Charge Amplitude.
-  // We do this to prepare for cross talk check 
-  // insertion sort is used here
-  ACluster aCluster_buff;
-  for(int i=1; i<nClusters; i++){
-    aCluster_buff = vClusters[i];
-    int j = i-1;
-    while(j>=0 && vClusters[j].fCharge < aCluster_buff.fCharge){
-      vClusters[j+1]=vClusters[j];
-      j = j-1;
-    }
-    vClusters[j+1]=aCluster_buff;
-  }
-  // idiot check
-  for(int i=0; i<nClusters-1; i++){
-    if( vClusters[i].fCharge < vClusters[i+1].fCharge)
-      std::cout << "Sorting went wrong! " << std::endl;
-  }
-}
 
 void BeamGEMProjection::SortHits(){
   // Sort Hits by Charge Amplitude.
@@ -278,7 +245,6 @@ void BeamGEMProjection::SortHits(){
 	std::cout << "Sorting went wrong! " << std::endl;
     }
   }
-
 }
 
 int BeamGEMProjection::CheckNStrips(){
@@ -338,22 +304,17 @@ void BeamGEMProjection::PlotResults(TString runName, int ievt){
 }
 
 void BeamGEMProjection::RejectCrossTalk(){
-  if(vClusters.size()>1){
-    std::vector< ACluster>::iterator it = vClusters.begin();
-    std::vector< ACluster>::iterator it_next = it+1;
+  if(vHits.size()>1){
+    std::vector< AHit>::iterator it = vHits.begin();
+    std::vector< AHit>::iterator it_next = it+1;
     int isCrossTalk = 0;
 
-    while(it!=vClusters.end()){
-      while(it_next!=vClusters.end()){
+    while(it!=vHits.end()){
+      while(it_next!=vHits.end()){
 	isCrossTalk = TestCrossTalk(*it, *it_next);
 	if(isCrossTalk){
-	  int bin_begin = ((*it_next).pRange).first;
-	  int bin_end = ((*it_next).pRange).second;
-	  
-	  for(int i=bin_begin;i<bin_end;i++)
-	    h_proj->SetBinContent(i,0);
-	  
-	  it_next = vClusters.erase(it_next);
+	  ErasePeakFromHist(*it_next);
+	  it_next = vHits.erase(it_next);
 	}
 	else
 	  it_next++;
@@ -364,25 +325,32 @@ void BeamGEMProjection::RejectCrossTalk(){
   } // if only one or less, nothing need to be done.
 }
 
-int BeamGEMProjection::TestCrossTalk(ACluster i, ACluster j){
+void BeamGEMProjection::ErasePeakFromHist(AHit aHit){
+  int bin_low = aHit.pRange.first;
+  int bin_up = aHit.pRange.second;
+  for(int ibin=bin_low; ibin<=bin_up;ibin++){
+    h_proj->SetBinContent(ibin,0);
+  }
+}
+
+int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
 
   // Not a very good idea for oversize cluster
   // It is tedious but more safe.
-
   int isCrossTalk = 0;
   // induced cluster is usually relatively small
   // a center value is good enough
 
-  int strip2_center = (j.pRange.second +j.pRange.first)/2.0;
+  int strip2_center = (j.pRange.second-1 +j.pRange.first-1)/2.0;
   int myapv2 = floor(strip2_center/128); // APV #(0-3)
   strip2_center = strip2_center%128; // reduced to APV strip #(0-127)
 
   int strip2_neighbor_lo = lower_neighbor[strip2_center] + myapv2*128;
-  int strip2_neighbor_hi = higher_neighbor[strip2_center]+ myapv2*128;
+  int strip2_neighbor_hi = upper_neighbor[strip2_center]+ myapv2*128;
 
   // the range of main cluster
-  int strip1_lo = i.pRange.first;
-  int strip1_up = i.pRange.second;
+  int strip1_lo = i.pRange.first-1;
+  int strip1_up = i.pRange.second-1;
   // Calculate the APV id separately,
   // because the main cluster could cross the border of two APVs
   int myapv1_lo = floor(strip1_lo/128);
@@ -405,7 +373,8 @@ int BeamGEMProjection::TestCrossTalk(ACluster i, ACluster j){
     else
       isCrossTalk = 0; // it is not
   }
-  
+
+
   return isCrossTalk;
 }
 
@@ -453,62 +422,63 @@ void BeamGEMProjection::UpdateHits( vector< int> vHitsMask){
 
 }
 
-vector<int> BeamGEMProjection::ProcessSplitCheck(pair<int,int> prRange){
-  
+vector<int> BeamGEMProjection::FindValleys(pair<int,int> prRange){
   // Adapted from Jlab-TreeSearch::GEMPlane::Decode()
   int iter = prRange.first;
   double max_val = h_proj->GetBinContent(iter);
-  double max_pos = iter;
-  vector<int> peak;
-  int end = prRange.second;
-  int width = prRange.second - prRange.first;
 
-  int kMaxSize = width_threshold;
+  vector<int> valley;
+  double valley_pos;
+  
+  int end = prRange.second;
+  
+  // int width = prRange.second - prRange.first;
+  // int kMaxSize = width_threshold;
   double frac = split_frac; 
   double frac_up = 1.0 + frac;
   double frac_down = 1.0 -frac;
 
   double cur_val ; //current bin content  
   double min_val;
+
   int min_counts = 0; 
   enum EStatus {kFindMax=1,kFindMin};
   EStatus eStatus = kFindMax;
-  if( width >kMaxSize ){
-    while(iter!=end){
-      iter++;
-      cur_val = h_proj->GetBinContent(iter);
-      if(cur_val ==0 ) // skip dead channel
-	continue;
+  
+  while(iter<=end){
+    iter++;
+    cur_val = h_proj->GetBinContent(iter);
+
+    if(cur_val ==0 && iter!=end)// skip dead channel
+      continue;
       
-      switch(eStatus){
-      case kFindMax:
-	if(cur_val>max_val){
-	  max_val = cur_val;
-	  max_pos = iter;
-	}
-	else if( max_val-cur_val>stability
-		 || iter == end){
-	  eStatus = kFindMin;
-	  min_val = cur_val;
-	  peak.push_back(max_pos);
-	  //	  continue;
-	}
-	break;
-      case kFindMin:
-	if(cur_val<min_val)
-	  min_val = cur_val;
-	else if (cur_val-min_val> stability){
-	  eStatus = kFindMax;
-	  max_val = cur_val;
-	  max_pos = iter;
-	  min_counts ++;
-	  //	  continue;
-	}
-	break;
-      } // End of switch
-    } // End of iter while-loop
-  } // End of ... I know
-  return peak;  // No splitting found 
+    switch(eStatus){
+    case kFindMax:
+      if(cur_val>max_val){
+	max_val = cur_val;
+      }
+      else if( cur_val<max_val*frac_down){
+	eStatus = kFindMin;
+	min_val = cur_val;
+	valley_pos = iter;
+      }
+      break;
+    case kFindMin:
+      if(cur_val<min_val){
+	min_val = cur_val;
+	valley_pos = iter;
+      }
+      else if (cur_val> min_val*frac_up){
+	eStatus = kFindMax;
+	max_val = cur_val;
+	valley.push_back(valley_pos);
+	min_counts ++;
+      }
+      break;
+    } // End of switch
+  } // End of iter while-loop
+
+  return valley;
 }
 
 
