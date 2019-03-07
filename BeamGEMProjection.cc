@@ -135,12 +135,22 @@ int BeamGEMProjection::FineProcess(){
     }
     it++;
   }
+
   SortHits();
   RejectCrossTalk();
+  
+  // vector<AHit>::iterator ith = vHits.begin();
+  // while(ith!=vHits.end()){
+  //   cout << strProjName << ":" ;
+  //   cout << (*ith).pRange.first << "-" << (*ith).pRange.second ;
+  //   cout << ", charge: ";
+  //   cout << (*ith).fCharge << endl;
+  //   ith++;
+  // }
 
   // summarize nHits counting splitting peaks
-  nHits = vHits.size();
- 
+
+  nHits = vHits.size();	 
   h_raw->SetTitle( Form("Projection %s ,  %d Hit(s) Found",
 			strProjName.Data(),
 			nHits));
@@ -233,7 +243,8 @@ void BeamGEMProjection::SortHits(){
   // Sort Hits by Charge Amplitude.
   // We do this to prepare for correlation matching in Plane level 
   // insertion sort is used here
-  if(vHits.size()>1){
+  nHits = vHits.size();
+  if(nHits>1){
     AHit aHit_buff;
     for(int i=1; i<nHits; i++){
       aHit_buff = vHits[i];

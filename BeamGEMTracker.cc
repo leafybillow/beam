@@ -64,12 +64,12 @@ void BeamGEMTracker::Process(){
     isGoldenTrack = 0;
     for(int i=0; i< effNhits[0]; i++){
       ATrack goodTrack;
-      double min_slope = 100000; // some non-sense large number
+      double min_slope = 1; // some non-sense large number
       for(int j=0; j < effNhits[1];j++){
 	int pattern[2] = {i,j};
 	ATrack aTrack = GenerateCandidates(pattern);
 	FitATrack(&aTrack);
-	double slope = aTrack.fSlope_zy * aTrack.fSlope_zx;
+	double slope = fabs(aTrack.fSlope_zy * aTrack.fSlope_zx);
 	if(slope<min_slope){
 	  min_slope = slope;
 	  goodTrack =aTrack;
