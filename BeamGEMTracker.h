@@ -63,7 +63,7 @@ class BeamGEMTracker: public TObject{
   void Init();
   bool FitATrack(ATrack* aTrack);
   ATrack GenerateCandidates(int* pattern);
-  void SwapHits(int, int ,int);
+  void SwapHits(int iplane, int ,int);
   ATrack PingForward(int , int);
   void ProjectHits();
 public:

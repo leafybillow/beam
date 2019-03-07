@@ -58,17 +58,33 @@ void BeamGEMTracker::Init(){
 
 void BeamGEMTracker::Process(){
   Init();
-
   if(track_npt<=1)
     nTracks = 0;
   else if(track_npt==2){
     isGoldenTrack = 0;
-    for(int i=0; i< effNhits[0]; i++)
+    for(int i=0; i< effNhits[0]; i++){
+      ATrack goodTrack;
+      double min_slope = 100000; // some non-sense large number
       for(int j=0; j < effNhits[1];j++){
 	int pattern[2] = {i,j};
 	ATrack aTrack = GenerateCandidates(pattern);
-	vTracks.push_back(aTrack);
+	FitATrack(&aTrack);
+	double slope = aTrack.fSlope_zy * aTrack.fSlope_zx;
+	if(slope<min_slope){
+	  min_slope = slope;
+	  goodTrack =aTrack;
+	}
       }
+      if(effNhits[1]!=0)
+	vTracks.push_back(goodTrack);	  
+      if(effNhits[1]>1){
+	int myid = goodTrack.myPattern[1];
+	SwapHits(1, myid, effNhits[1]-1);
+	effNhits[1] = effNhits[1] -1;
+      }
+      else if(effNhits[1] ==1)
+	effNhits[1] = 0;
+    }
   }
   else if(track_npt>2){
     isGoldenTrack = 1;
