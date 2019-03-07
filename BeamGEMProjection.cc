@@ -211,7 +211,7 @@ double BeamGEMProjection::ProcessCharge( pair<int,int> prRange){
 }
 
 int BeamGEMProjection::ProcessWidth(pair<int,int> prRange){
-  int width = prRange.second - prRange.first;
+  int width = prRange.second - prRange.first+1;
   return width;
 }
 
@@ -339,9 +339,11 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
   // It is tedious but more safe.
   int isCrossTalk = 0;
   // induced cluster is usually relatively small
-  // a center value is good enough
-
-  int strip2_center = (j.pRange.second-1 +j.pRange.first-1)/2.0;
+  // a peak position value is good enough
+  int begin = j.pRange.first;
+  int end = j.pRange.second;
+  
+  int strip2_center = (begin+end)/2.0-1;
   int myapv2 = floor(strip2_center/128); // APV #(0-3)
   strip2_center = strip2_center%128; // reduced to APV strip #(0-127)
 
@@ -365,7 +367,7 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
       // at least one is equal and then trigger cross talk test
       int a = (strip2_neighbor_hi - strip1_lo)*(strip2_neighbor_hi - strip1_up);
       int b = (strip2_neighbor_lo - strip1_lo)*(strip2_neighbor_lo - strip1_up);
-      if ( a<0 || b<0)
+      if ( a<=0 || b<=0)
 	isCrossTalk =1;
       else
 	isCrossTalk =0;
@@ -373,7 +375,6 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
     else
       isCrossTalk = 0; // it is not
   }
-
 
   return isCrossTalk;
 }

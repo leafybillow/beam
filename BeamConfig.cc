@@ -112,7 +112,7 @@ int BeamConfig::ParseFile(){
       split_frac = vecStr[1].Atof();
       continue;
     }
-    if(vecStr[0].Contains("xtalk_thresold")){
+    if(vecStr[0].Contains("xtalk_threshold")){
       xtalk_threshold = vecStr[1].Atof();
       continue;
     }
