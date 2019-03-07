@@ -312,8 +312,6 @@ int BeamAnalysis::Analysis(){
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
 
-  LoadRMS();
-  
   cout << "--Begin Reconstruction and Tracking analysis " << endl;
   TTree *tree_rec;
   const Int_t nproj = projKey.size();
@@ -453,8 +451,6 @@ int BeamAnalysis::Analysis(){
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
-  Bool_t kZeroSuppression = 1; // Suppressed by default
-  
   Int_t nentries = tree_raw->GetEntries();
   for(Int_t ievt=0;ievt<nentries;ievt++){
     if(ievt%200==0)
@@ -486,15 +482,6 @@ int BeamAnalysis::Analysis(){
 	} 
 	Int_t myStripID = (Int_t)bgData[iproj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
-	// Zero suppression
-	
-	if(bgStrip->GetADCsum()>zs_threshold*sqrt(6)*rms[iproj][ich])
-	  kZeroSuppression = 0; // Not Suppressed
-	else
-	  kZeroSuppression = 1;
-	
-	bgStrip->SetZeroSuppression(kZeroSuppression);
-
 	// bgStrip->Process(); // FIXME: Not implemented now
 	bgProjection[iproj]->AddStrip(bgStrip);
 

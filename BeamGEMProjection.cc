@@ -6,6 +6,7 @@
 #include "TText.h"
 
 #include <iostream>
+#include <bits/stdc++.h>
 
 ClassImp(BeamGEMProjection);
 
@@ -60,13 +61,17 @@ int BeamGEMProjection::Process(){
 }
 int BeamGEMProjection::CoarseProcess(){
   // Compute baseline RMS and mean;
-  baseline_mean = CalculateMean(vBaseline);
-  baseline_rms = CalculateRMS(vBaseline);
+  sort(vStat.begin(), vStat.end());
+  
+  baseline_mean = CalculateMean(vStat, 0.7);
+  baseline_rms = CalculateRMS(vStat, 0.7);
   baseline_rms = sqrt( pow(baseline_rms,2) - pow(baseline_mean,2));
-
-  overall_mean = CalculateMean(vStat);
-  overall_rms = CalculateRMS(vStat);
+  
+  overall_mean = CalculateMean(vStat,1.0);
+  overall_rms = CalculateRMS(vStat,1.0);
   overall_rms = sqrt(pow(overall_rms,2) - pow(overall_mean,2));
+
+  FillProjection();
   
   if(CheckNStrips()==1){ // if it fails to match nstrip
     cerr<< "Failed to match NStrip"<< endl;
@@ -268,15 +273,6 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
 
   double ampl = bgGEMStrip->GetAmplitude();
   int strip_id = bgGEMStrip->GetStripID();
-  bool zsflag = bgGEMStrip->GetZSStatus();
-  
-  if(!zsflag){ // if not zero suppressed
-    if(strip_id>edge_cut && strip_id <nStrips-edge_cut)
-      h_proj->SetBinContent(strip_id,ampl);
-  }
-  
-  if(zsflag)
-    vBaseline.push_back(ampl);
   
   h_raw->SetBinContent(strip_id,ampl);
   vStat.push_back(ampl);
@@ -483,15 +479,18 @@ vector<int> BeamGEMProjection::FindValleys(pair<int,int> prRange){
 }
 
 
-double BeamGEMProjection::CalculateMean(vector<double> aVector){
+double BeamGEMProjection::CalculateMean(vector<double> aVector,
+					double portion =1.0){
   double sum = 0;
   int counts = 0;
-  vector<double>::iterator iter = aVector.begin();
-  while(iter!=aVector.end()){
-    sum += *iter;
+  int nsize = aVector.size();
+  nsize = (int)(nsize * portion);
+
+  for(int i=0; i<nsize;i++){
+    sum += aVector[i];
     counts++;
-    iter++;
   }
+
   if(counts!=0){
     double mean = sum /counts;
     return mean;
@@ -500,16 +499,19 @@ double BeamGEMProjection::CalculateMean(vector<double> aVector){
     return 0;
 }
 
-double BeamGEMProjection::CalculateRMS(vector<double> aVector){
+double BeamGEMProjection::CalculateRMS(vector<double> aVector,
+				       double portion = 1.0){
   double sum = 0;
   int counts = 0;
-  vector<double>::iterator iter = aVector.begin();
-  while(iter!=aVector.end()){
-    double buff = *iter;
-    sum += (buff*buff);
+  
+  int nsize = aVector.size();
+  nsize = (int)(nsize * portion);
+
+  for(int i=0; i<nsize;i++){
+    sum += aVector[i] * aVector[i];
     counts++;
-    iter++;
   }
+
   if(counts!=0){
     double rms = sqrt(sum /counts);
     return rms;
@@ -518,6 +520,15 @@ double BeamGEMProjection::CalculateRMS(vector<double> aVector){
     return 0;
 }
 
+void BeamGEMProjection::FillProjection(){
+
+  for(int i=edge_cut; i<=nStrips-edge_cut; i++){
+    double bin_content = h_raw ->GetBinContent(i);
+    if( (bin_content - baseline_mean)> zs_threshold*baseline_rms )
+      h_proj->SetBinContent(i,bin_content);
+  }
+  
+}
 
 int BeamGEMProjection::PostProcess(){
   // FIXME: to-do

@@ -81,8 +81,8 @@ class BeamGEMProjection: public TObject{
   double overall_rms;
   
   void Init();
-  double CalculateMean(vector<double> );
-  double CalculateRMS(vector<double> );
+  double CalculateMean(vector<double> , double);
+  double CalculateRMS(vector<double>, double );
   // Called by Process
   // Coarse Process for Clusters
   int CoarseProcess();
@@ -102,6 +102,7 @@ class BeamGEMProjection: public TObject{
   double ProcessResolution(pair<int,int>);
   void SortHits();
 
+  void FillProjection();
   int CheckNStrips();
   void FitCluster(int nPeaks); // Not Used for now
 
