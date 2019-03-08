@@ -1,6 +1,6 @@
 #include <TObject.h>
 #include <vector>
-
+#include "BeamTypes.h"
 
 using namespace std;
 class BeamGEMPlane;
@@ -8,17 +8,7 @@ class BeamGEMProjection;
 class BeamConfig;
 class TLinearFitter;
 
-struct ATrack{
-  vector<double> x;
-  vector<double> y;
-  vector<double> z;
-  double fSlope_zx;
-  double fSlope_zy;
-  double fIntercept_x;
-  double fIntercept_y;
-  double fChi2;
-  vector<int> myPattern;
-};
+
 
 class BeamGEMTracker: public TObject{
  private:

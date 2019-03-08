@@ -1,6 +1,7 @@
 #include <TObject.h>
 #include "TH1.h"
 #include <vector>
+#include "BeamTypes.h"
 
 const int lower_neighbor[128]=
   {127,-1,120,121,122,123,124,125,
@@ -40,20 +41,6 @@ const int upper_neighbor[128]=
 // returns physical strip number of its adjacent channels
 
 using namespace std;
-
-struct ACluster{
-  pair<int, int> pRange;
-  int fSplit;  // if 0, no split is detected
-  vector<int> valley; // valley position;
-};
-
-struct AHit{
-  double fPosition; // Hit position in this projection, unit:mm
-  double fCharge; // amount of charge integrated over this hit, unit: adc
-  double fRes;  // spatial resolution of this hit, unit um
-  int fWidth; // A single hit width, unit: # of strips, an integer
-  pair<int, int> pRange;
-};
   
 class BeamGEMStrip;
 
