@@ -18,8 +18,8 @@ BeamGEMTracker::BeamGEMTracker()
   :fSlope_zx(),fSlope_zy(),
    fTheta(),fPhi(),
    fDet_x(),fDet_y(),fDet_z(),
-   fGEM_z(),fHit_x(),fHit_y(),
    qdc_value(0),
+   fGEM_z(),fHit_x(),fHit_y(),
    vPlanes(),vTracks(),
    nTracks(0),isGoldenTrack(0),track_npt(0)
 {
