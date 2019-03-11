@@ -1,8 +1,3 @@
-/* #include <vector> */
-/* #include <utility> */
-/* #include <iostream> */
-/* #include <stdio.h> */
-
 #ifndef BeamTypes_h
 #define BeamTypes_h
 
@@ -32,5 +27,13 @@ struct ATrack{
   double fIntercept_y;
   double fChi2;
   vector<int> myPattern;
+};
+
+struct correlator{
+  vector< AHit > xHits;
+  vector< AHit > yHits;
+  double charge_sum_x;
+  double charge_sum_y;
+  double charge_distance;
 };
 #endif

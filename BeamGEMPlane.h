@@ -3,6 +3,8 @@
 #include <TH1.h>
 #include <TCanvas.h>
 
+#include "BeamTypes.h"
+
 class BeamGEMProjection;
 using namespace std;
 class BeamGEMPlane: public TObject{
@@ -17,6 +19,7 @@ class BeamGEMPlane: public TObject{
   vector<int> fSplit_x; // Split Level
   vector<int> fSplit_y;
 
+  vector< correlator > vCorrelator;
   vector<double> fCorelation; // (x-y)/(x+y)
 
   vector<int> vHitsMask_x;  // 1 : accept , 0 : reject 
@@ -27,18 +30,23 @@ class BeamGEMPlane: public TObject{
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
   
+  vector< AHit > xHits;
+  vector< AHit > yHits;
+  
   int my_id;
   //Process functions
 
-  int Reconstruct(); // return number of hits
+  int Reconstruct();  // return number of hits reconstructed
 
   void CollectResults();
-  double EvalCorrelation(double charge_x, double charge_y);
 
+  vector<int> GenerateKeys(int, int, int, vector<int>);
+  void EvalChargeDistance(correlator &aCorrelator);
+  correlator GenerateCorrelator(int key1, int key2);
+  void UpdateCorrelator(correlator &aCorrelator);
+  
   //Init Check
   int CheckProjections();
-  // Post-check
-  int CheckHits();  
 
  public:
   // Called by Users
