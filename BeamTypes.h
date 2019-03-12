@@ -34,6 +34,6 @@ struct correlator{
   vector< AHit > yHits;
   double charge_sum_x;
   double charge_sum_y;
-  double charge_distance;
+  double correlation;
 };
 #endif

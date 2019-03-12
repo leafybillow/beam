@@ -45,13 +45,16 @@ int BeamGEMPlane::Reconstruct(){
     return nHits_x;
   }
   else if(nHits_x> nHits_y){
+    correlator all_correlator = GenerateCorrelator( pow(2,nHits_x)-1, pow(2,nHits_y)-1);
+    double all_slope = all_correlator.correlation;
     int key_y ;
     int skip_key = 0;
-    int diff = nHits_x- nHits_y+1;
-    for(int iy=0;iy<nHits_y;iy++){
+    int nAvailble = nHits_x;
+    int iy=0;
+    while(iy<nHits_y && nAvailble>0){
       key_y = ( 1 << iy);
       vector<int> vdummy;
-      vector<int> vKey_x = GenerateKeys(nHits_x,diff,0,vdummy) ;
+      vector<int> vKey_x = GenerateKeys(nHits_x,nAvailble,0,vdummy) ;
       vector<int>::iterator it_keyx = vKey_x.begin();
       correlator candidate = GenerateCorrelator(*it_keyx,key_y);
       int key_candidate = *it_keyx;
@@ -61,17 +64,18 @@ int BeamGEMPlane::Reconstruct(){
 	  continue;
 	}
 	correlator aCorrelator = GenerateCorrelator(*it_keyx, key_y);
-	if(aCorrelator.charge_distance < candidate.charge_distance){
+	if(fabs(aCorrelator.correlation-all_slope)<
+	   fabs(candidate.correlation-all_slope)){
 	  candidate = aCorrelator;
 	  key_candidate = *it_keyx;
 	}
 	it_keyx ++;
       }
       skip_key |= key_candidate;
-      diff -= ((candidate.xHits).size()-(candidate.yHits).size());
-
+      nAvailble = nAvailble - (candidate.xHits).size();
       UpdateCorrelator(candidate);
       vCorrelator.push_back(candidate);
+      iy++;
     }
     int n_rec = 0;
     vector<correlator>::iterator itc=vCorrelator.begin();
@@ -82,13 +86,16 @@ int BeamGEMPlane::Reconstruct(){
     return n_rec;
   }
   else if(nHits_x< nHits_y){
+    correlator all_correlator = GenerateCorrelator( pow(2,nHits_x)-1, pow(2,nHits_y)-1);
+    double all_slope = all_correlator.correlation;
     int key_x ;
     int skip_key = 0;
-    int diff = nHits_y- nHits_x+1;
-    for(int ix=0;ix<nHits_x;ix++){
+    int ix =0;
+    int nAvailble = nHits_y;
+    while(ix<nHits_x && nAvailble>0){
       key_x = ( 1 << ix);
       vector<int> vdummy;
-      vector<int> vKey_y = GenerateKeys(nHits_y,diff,0,vdummy) ;
+      vector<int> vKey_y = GenerateKeys(nHits_y,nAvailble,0,vdummy) ;
       vector<int>::iterator it_keyy = vKey_y.begin();
       correlator candidate = GenerateCorrelator(key_x,*it_keyy);
       int key_candidate = *it_keyy;
@@ -98,17 +105,19 @@ int BeamGEMPlane::Reconstruct(){
 	  continue;
 	}
 	correlator aCorrelator = GenerateCorrelator(key_x, *it_keyy);
-	if(aCorrelator.charge_distance < candidate.charge_distance){
+	if(fabs(aCorrelator.correlation-all_slope)<
+	   fabs(candidate.correlation-all_slope)){
 	  candidate = aCorrelator;
 	  key_candidate = *it_keyy;
 	}
 	it_keyy ++;
       }
       skip_key |= key_candidate;
-      diff -= ((candidate.yHits).size()-(candidate.xHits).size());
+      nAvailble = nAvailble-(candidate.yHits).size();
 
       UpdateCorrelator(candidate);
       vCorrelator.push_back(candidate);
+      ix++;
     }
     int n_rec = 0;
     vector<correlator>::iterator itc=vCorrelator.begin();
@@ -147,11 +156,10 @@ vector<int> BeamGEMPlane::GenerateKeys(int nlength,int nOccupied,int skip,
       while(idigi<nshift){
 	new_keys.push_back(*iter_prev|(1<<idigi));
 	idigi++;
-
       }
       iter_prev++;
     }
-    skip+= prev_keys.size();    
+    skip = prev_keys.size();    
   }
   return GenerateKeys(nlength-1,nOccupied-1,skip,new_keys);
 }
@@ -179,7 +187,7 @@ correlator BeamGEMPlane::GenerateCorrelator(int key_x, int key_y){
   aCorrelator.xHits = xHits_buff;
   aCorrelator.yHits = yHits_buff;
   
-  EvalChargeDistance(aCorrelator);
+  EvalCorrelation(aCorrelator);
   return aCorrelator;
 }
 
@@ -203,7 +211,7 @@ void BeamGEMPlane::UpdateCorrelator( correlator &aCorrelator){
       AHit aHit;
       aHit.fPosition = position_y;
       aHit.fWidth = width_y;
-      aHit.fCharge = ratio*total_charge_y;
+      aHit.fCharge = total_charge_y;
       aCorrelator.yHits.push_back(aHit);
     }
     
@@ -221,14 +229,14 @@ void BeamGEMPlane::UpdateCorrelator( correlator &aCorrelator){
       AHit aHit;
       aHit.fPosition = position_x;
       aHit.fWidth = width_x;
-      aHit.fCharge = ratio*total_charge_x;
+      aHit.fCharge = total_charge_x;
       aCorrelator.xHits.push_back(aHit);
     }
   }
   
 }
 
-void BeamGEMPlane::EvalChargeDistance( correlator &aCorrelator){
+void BeamGEMPlane::EvalCorrelation( correlator &aCorrelator){
 
   double xcharge =0;
   double ycharge =0;
@@ -247,7 +255,7 @@ void BeamGEMPlane::EvalChargeDistance( correlator &aCorrelator){
   }
   aCorrelator.charge_sum_x = xcharge;
   aCorrelator.charge_sum_y = ycharge;
-  aCorrelator.charge_distance = sqrt(pow(xcharge-ycharge,2));
+  aCorrelator.correlation = xcharge/ycharge;
 }
 
 
@@ -275,7 +283,7 @@ void BeamGEMPlane::CollectResults(){
 
     it++;
   }
-  PrintSummary();
+  // PrintSummary();
 }
 
 int BeamGEMPlane::CheckProjections(){

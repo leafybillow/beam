@@ -40,7 +40,7 @@ class BeamGEMPlane: public TObject{
   void CollectResults();
 
   vector<int> GenerateKeys(int, int, int, vector<int>);
-  void EvalChargeDistance(correlator &aCorrelator);
+  void EvalCorrelation(correlator &aCorrelator);
   correlator GenerateCorrelator(int key1, int key2);
   void UpdateCorrelator(correlator &aCorrelator);
   
