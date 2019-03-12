@@ -35,7 +35,7 @@ int BeamGEMPlane::Reconstruct(){
   // some assumption is made to make it works. -TY
   int nHits_x = bgProjX->GetNHits();
   int nHits_y = bgProjY->GetNHits();
-
+ 
   if(nHits_x==0 || nHits_y == 0)
     return 0;
   else if (nHits_x==nHits_y){
@@ -63,7 +63,6 @@ int BeamGEMPlane::Reconstruct(){
 	}
 	correlator aCorrelator = GenerateCorrelator(*it_keyx, key_y);
 	if(aCorrelator.charge_distance < candidate.charge_distance){
-	  cout << aCorrelator.charge_distance << endl;
 	  candidate = aCorrelator;
 	  key_candidate = *it_keyx;
 	}
