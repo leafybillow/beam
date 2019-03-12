@@ -11,7 +11,6 @@ BeamGEMPlane::BeamGEMPlane()
    fCharge_x(),fCharge_y(),
    fWidth_x(),fWidth_y(),
    fSplit_x(),fSplit_y(),
-   fCorelation(),
    vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
    bgProjX(NULL),bgProjY(NULL),
@@ -80,7 +79,6 @@ int BeamGEMPlane::Reconstruct(){
       n_rec += ((*itc).xHits).size();
       itc++;
     }
-    cout <<n_rec << endl;
     return n_rec;
   }
   else if(nHits_x< nHits_y){
@@ -101,7 +99,6 @@ int BeamGEMPlane::Reconstruct(){
 	}
 	correlator aCorrelator = GenerateCorrelator(key_x, *it_keyy);
 	if(aCorrelator.charge_distance < candidate.charge_distance){
-	  cout << aCorrelator.charge_distance << endl;
 	  candidate = aCorrelator;
 	  key_candidate = *it_keyy;
 	}
@@ -119,7 +116,6 @@ int BeamGEMPlane::Reconstruct(){
       n_rec += ((*itc).yHits).size();
       itc++;
     }
-    cout <<n_rec << endl;
     return n_rec;
   }
   else
@@ -279,6 +275,7 @@ void BeamGEMPlane::CollectResults(){
 
     it++;
   }
+  PrintSummary();
 }
 
 int BeamGEMPlane::CheckProjections(){
@@ -327,3 +324,23 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   delete c1;
 }
 
+void BeamGEMPlane::PrintSummary(){
+  cout << "-- GEMPlane Summary: "<< endl;
+  vector<correlator>::iterator itc=vCorrelator.begin();
+  while(itc!=vCorrelator.end()){
+    vector< AHit>::iterator ixhits = (*itc).xHits.begin();
+    vector< AHit>::iterator iyhits = (*itc).yHits.begin();
+    while( ixhits!=(*itc).xHits.end() ){
+      cout << "--"<< endl;
+      printf("x pos: %.2f \t" , (*ixhits).fPosition);
+      printf("x charge: %.2f \n" , (*ixhits).fCharge);
+      printf("y pos: %.2f \t" , (*iyhits).fPosition);
+      printf("y charge: %.2f \n" , (*iyhits).fCharge);
+      ixhits++;
+      iyhits++;
+    }
+
+    itc++;
+  }
+ 
+}

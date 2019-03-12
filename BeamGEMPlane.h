@@ -20,8 +20,7 @@ class BeamGEMPlane: public TObject{
   vector<int> fSplit_y;
 
   vector< correlator > vCorrelator;
-  vector<double> fCorelation; // (x-y)/(x+y)
-
+  
   vector<int> vHitsMask_x;  // 1 : accept , 0 : reject 
   vector<int> vHitsMask_y;
   double z_position; // position in z; Not used now
@@ -63,7 +62,6 @@ class BeamGEMPlane: public TObject{
   inline vector<int> GetSplitX() const {return fSplit_x;};
   inline vector<int> GetSplitY() const {return fSplit_y;};
 
-  inline vector<double> GetCorrelation() const {return fCorelation;};
   inline int GetNHits() const {return nHits;};
 
   inline BeamGEMProjection* GetProjectionX() const {return bgProjX;};
@@ -78,6 +76,7 @@ class BeamGEMPlane: public TObject{
 
   int Process();
   void PlotResults(TString, int);
-
+  void PrintSummary();
+  
   ClassDef(BeamGEMPlane,0);
 };
