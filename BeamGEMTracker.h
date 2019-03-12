@@ -1,23 +1,14 @@
 #include <TObject.h>
 #include <vector>
-
+#include "BeamTypes.h"
 
 using namespace std;
 class BeamGEMPlane;
 class BeamGEMProjection;
+class BeamConfig;
 class TLinearFitter;
 
-struct ATrack{
-  vector<double> x;
-  vector<double> y;
-  vector<double> z;
-  double fSlope_zx;
-  double fSlope_zy;
-  double fIntercept_x;
-  double fIntercept_y;
-  double fChi2;
-  vector<int> myPattern;
-};
+
 
 class BeamGEMTracker: public TObject{
  private:
@@ -29,8 +20,19 @@ class BeamGEMTracker: public TObject{
   
   vector<vector<double> > fDet_x; //Extrapolated hits positions on detector plane
   vector<vector<double> > fDet_y; // [iDet][iTrack]
+
+  vector<vector<double> > fDet_theta; //Extrapolated angle on detector plane
+  vector<vector<double> > fDet_phi; // [iDet][iTrack]
+
   vector<double> fDet_z;
+  vector<double> fDet_pos_x;
+  vector<double> fDet_pos_y;
+  vector<double> fDet_width_x;
+  vector<double> fDet_width_y;
+  vector<double> fDet_thickness;
+  double qdc_value;
   
+  // To-do  vector<double> rotation;
   vector<double> fGEM_z;
   vector< vector< double> > fHit_x; // [igem][ihit]
   vector< vector< double> > fHit_y;
@@ -51,7 +53,7 @@ class BeamGEMTracker: public TObject{
   void Init();
   bool FitATrack(ATrack* aTrack);
   ATrack GenerateCandidates(int* pattern);
-  void SwapHits(int, int ,int);
+  void SwapHits(int iplane, int ,int);
   ATrack PingForward(int , int);
   void ProjectHits();
 public:
@@ -61,9 +63,13 @@ public:
   inline int GetNTracks() const {return nTracks;};
   inline vector< vector<double> > GetDetX() const {return fDet_x;};
   inline vector< vector<double> > GetDetY() const {return fDet_y;};
+  inline vector< vector<double> > GetDetTheta() const {return fDet_theta;};
+  inline vector< vector<double> > GetDetPhi() const {return fDet_phi;};
+
   inline bool IsGoldenTrack() const {return isGoldenTrack;};
-  inline void SetDetZ( vector<Double_t> z_pos) {fDet_z = z_pos;};
-  
+
+  void LoadDetectorGeometry(BeamConfig* fConfig);
+  inline void  LoadQDC(double qdc){ qdc_value = qdc;};
   void Process();
   void PlotResults(TString, int);
   void AddPlane(BeamGEMPlane* );

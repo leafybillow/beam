@@ -1,6 +1,7 @@
 #include <TObject.h>
 #include "TH1.h"
 #include <vector>
+#include "BeamTypes.h"
 
 const int lower_neighbor[128]=
   {127,-1,120,121,122,123,124,125,
@@ -20,7 +21,7 @@ const int lower_neighbor[128]=
    80,81,82,83,84,85,86,87,
    88,89,90,91,92,93,94,95}; // [istrip]
 
-const int higher_neighbor[128]=
+const int upper_neighbor[128]=
   {32,33,34,35,36,37,38,39,
    40,41,42,43,44,45,46,47,
    48,49,50,51,52,53,54,55,
@@ -40,22 +41,6 @@ const int higher_neighbor[128]=
 // returns physical strip number of its adjacent channels
 
 using namespace std;
-
-struct ACluster{
-  double fPosition; // Cluster position in this projection, unit:mm
-  double fCharge; // amount of charge integrated over a (isolated) cluster, unit: adc
-  int fWidth; // A cluster width, unit: # of strips, an integer
-  pair<int, int> pRange;
-  int fSplit;  // if 0, no split is detected
-  vector<int> peak; // peak position;
-};
-
-struct AHit{
-  double fPosition; // Hit position in this projection, unit:mm
-  double fCharge; // amount of charge integrated over this hit, unit: adc
-  double fRes;  // spatial resolution of this hit, unit um
-  int fWidth; // A single hit width, unit: # of strips, an integer
-};
   
 class BeamGEMStrip;
 
@@ -83,21 +68,20 @@ class BeamGEMProjection: public TObject{
   double overall_rms;
   
   void Init();
-  double CalculateMean(vector<double> );
-  double CalculateRMS(vector<double> );
+  double CalculateMean(vector<double> , double);
+  double CalculateRMS(vector<double>, double );
   // Called by Process
   // Coarse Process for Clusters
   int CoarseProcess();
   vector< pair<int,int> > SearchClusters();
-  void SortClusters();
   double ProcessCentroid(pair<int,int>);
   double ProcessCharge(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
-  vector<int> ProcessSplitCheck(pair<int,int>);
-  
+  vector<int> FindValleys(pair<int,int>);
+
+  void ErasePeakFromHist(AHit aHit);
   void RejectCrossTalk(); 
-  int TestCrossTalk(ACluster i, ACluster j); // 1 : suspected as a cross talk pair; if 0: it is not
-  // int TestCrossTalk_v1(int iHit1, int iHit2);
+  int TestCrossTalk(AHit i, AHit j); // 1 : suspected as a cross talk pair; if 0: it is not
 
   // Fine Process for Hits
   int FineProcess();
@@ -105,6 +89,7 @@ class BeamGEMProjection: public TObject{
   double ProcessResolution(pair<int,int>);
   void SortHits();
 
+  void FillProjection();
   int CheckNStrips();
   void FitCluster(int nPeaks); // Not Used for now
 

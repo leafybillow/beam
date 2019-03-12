@@ -312,8 +312,6 @@ int BeamAnalysis::Analysis(){
   Int_t length_t = last_t - first_t;
   TString prefix_t = input_name(first_t,length_t);
 
-  LoadRMS();
-  
   cout << "--Begin Reconstruction and Tracking analysis " << endl;
   TTree *tree_rec;
   const Int_t nproj = projKey.size();
@@ -331,6 +329,8 @@ int BeamAnalysis::Analysis(){
   // Reconstruction Detector Hits
   vector< vector<double> > vDet_x;
   vector< vector<double> > vDet_y;
+  vector< vector<double> > vDet_theta;
+  vector< vector<double> > vDet_phi;
 
   vector <double> dummy_vec_double;
   vector <int> dummy_vec_int;
@@ -354,6 +354,9 @@ int BeamAnalysis::Analysis(){
   for(int idet=0;idet<ndets ;idet++){
     vDet_x.push_back(dummy_vec_double);
     vDet_y.push_back(dummy_vec_double);
+    vDet_theta.push_back(dummy_vec_double);
+    vDet_phi.push_back(dummy_vec_double);
+
   }
   int nTracks;
   bool isGoldenTrack;
@@ -362,31 +365,32 @@ int BeamAnalysis::Analysis(){
   Int_t n_qdc_ch = vec_qdc_ch.size();
   Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
   Double_t *det_qdc_hr = new Double_t[n_qdc_ch];
-  
+
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   // Reconstructed Tree
   tree_rec = new TTree("Rec","Rec");
 
-  if(!kPlot){
-    for(int iqdc=0;iqdc<n_qdc_ch;iqdc++){
+  for(int iqdc=0;iqdc<n_qdc_ch;iqdc++){
 
-      Int_t qdc_ch = vec_qdc_ch[iqdc];
-      TString lrqdc_name = Form("sbs.sbuscint.ladc%d",qdc_ch);
-      TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
-      tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
-      tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
-      //   ||     ||
-      // This is a bridge
-      //   ||     ||
-      tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
-      tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
-    }
+    Int_t qdc_ch = vec_qdc_ch[iqdc];
+    TString lrqdc_name = Form("sbs.sbuscint.ladc%d",qdc_ch);
+    TString hrqdc_name = Form("sbs.sbuscint.hadc%d",qdc_ch);
+    tree_raw->SetBranchAddress(lrqdc_name.Data(), &det_qdc_lr[iqdc]);
+    tree_raw->SetBranchAddress(hrqdc_name.Data(), &det_qdc_hr[iqdc]);
+    //   ||     ||
+    // This is a bridge
+    //   ||     ||
+    tree_rec->Branch(Form("det%d_qdc_lr",iqdc+1),&det_qdc_lr[iqdc]);
+    tree_rec->Branch(Form("det%d_qdc_hr",iqdc+1),&det_qdc_hr[iqdc]);
   }
+
   
   if(!kPlot){
     for(int idet=0; idet<ndets;idet++){
       tree_rec->Branch(Form("det%d_x",idet+1),&vDet_x[idet]);
       tree_rec->Branch(Form("det%d_y",idet+1),&vDet_y[idet]);
+      tree_rec->Branch(Form("det%d_theta",idet+1),&vDet_theta[idet]);
+      tree_rec->Branch(Form("det%d_phi",idet+1),&vDet_phi[idet]);
     }
     tree_rec->Branch("ntracks",&nTracks);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
@@ -447,8 +451,6 @@ int BeamAnalysis::Analysis(){
   //__________________________________________________________________________________
 
   //*Event loop, reconstruction
-  Bool_t kZeroSuppression = 1; // Suppressed by default
-  
   Int_t nentries = tree_raw->GetEntries();
   for(Int_t ievt=0;ievt<nentries;ievt++){
     if(ievt%200==0)
@@ -458,8 +460,9 @@ int BeamAnalysis::Analysis(){
 
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
-    bgTracker->SetDetZ( fConfig->GetZ_Det() );
-    BeamGEMPlane* bgPlane[n_gem];// = new BeamGEMPlane*[n_gem];
+    bgTracker->LoadDetectorGeometry( fConfig );
+    bgTracker->LoadQDC(det_qdc_hr[0]);
+    BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
     for(int igem=0;igem<n_gem;igem++){
@@ -479,15 +482,6 @@ int BeamAnalysis::Analysis(){
 	} 
 	Int_t myStripID = (Int_t)bgData[iproj].id_strip[ich];
 	BeamGEMStrip* bgStrip = new BeamGEMStrip(arADC,myStripID);
-	// Zero suppression
-	
-	if(bgStrip->GetADCsum()>zs_threshold*sqrt(6)*rms[iproj][ich])
-	  kZeroSuppression = 0; // Not Suppressed
-	else
-	  kZeroSuppression = 1;
-	
-	bgStrip->SetZeroSuppression(kZeroSuppression);
-
 	// bgStrip->Process(); // FIXME: Not implemented now
 	bgProjection[iproj]->AddStrip(bgStrip);
 
@@ -518,6 +512,8 @@ int BeamAnalysis::Analysis(){
     // Loading analysis results to new branch pointer
     vDet_x = bgTracker->GetDetX();
     vDet_y = bgTracker->GetDetY();
+    vDet_theta = bgTracker->GetDetTheta();
+    vDet_phi = bgTracker->GetDetPhi();
     nTracks = bgTracker->GetNTracks();
     isGoldenTrack = bgTracker->IsGoldenTrack();
     

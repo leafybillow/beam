@@ -19,7 +19,7 @@ OBJS	:= \
 	BeamGEMProjection.o BeamGEMData.o\
 	BeamConfig.o BeamAnalysis.o
 
-HDR	:= $(OBJS:.o=.h) BeamParameters.h
+HDR	:= $(OBJS:.o=.h) BeamParameters.h BeamTypes.h
 
 all:  $(OBJS) $(BINARIES) beam_Dict libbeam beam
 

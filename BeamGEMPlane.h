@@ -3,6 +3,8 @@
 #include <TH1.h>
 #include <TCanvas.h>
 
+#include "BeamTypes.h"
+
 class BeamGEMProjection;
 using namespace std;
 class BeamGEMPlane: public TObject{
@@ -17,8 +19,8 @@ class BeamGEMPlane: public TObject{
   vector<int> fSplit_x; // Split Level
   vector<int> fSplit_y;
 
-  vector<double> fCorelation; // (x-y)/(x+y)
-
+  vector< correlator > vCorrelator;
+  
   vector<int> vHitsMask_x;  // 1 : accept , 0 : reject 
   vector<int> vHitsMask_y;
   double z_position; // position in z; Not used now
@@ -27,18 +29,23 @@ class BeamGEMPlane: public TObject{
   BeamGEMProjection* bgProjX;
   BeamGEMProjection* bgProjY;
   
+  vector< AHit > xHits;
+  vector< AHit > yHits;
+  
   int my_id;
   //Process functions
 
-  int Reconstruct(); // return number of hits
+  int Reconstruct();  // return number of hits reconstructed
 
   void CollectResults();
-  double EvalCorrelation(double charge_x, double charge_y);
 
+  vector<int> GenerateKeys(int, int, int, vector<int>);
+  void EvalCorrelation(correlator &aCorrelator);
+  correlator GenerateCorrelator(int key1, int key2);
+  void UpdateCorrelator(correlator &aCorrelator);
+  
   //Init Check
   int CheckProjections();
-  // Post-check
-  int CheckHits();  
 
  public:
   // Called by Users
@@ -55,7 +62,6 @@ class BeamGEMPlane: public TObject{
   inline vector<int> GetSplitX() const {return fSplit_x;};
   inline vector<int> GetSplitY() const {return fSplit_y;};
 
-  inline vector<double> GetCorrelation() const {return fCorelation;};
   inline int GetNHits() const {return nHits;};
 
   inline BeamGEMProjection* GetProjectionX() const {return bgProjX;};
@@ -70,6 +76,7 @@ class BeamGEMPlane: public TObject{
 
   int Process();
   void PlotResults(TString, int);
-
+  void PrintSummary();
+  
   ClassDef(BeamGEMPlane,0);
 };

@@ -112,7 +112,7 @@ int BeamConfig::ParseFile(){
       split_frac = vecStr[1].Atof();
       continue;
     }
-    if(vecStr[0].Contains("xtalk_thresold")){
+    if(vecStr[0].Contains("xtalk_threshold")){
       xtalk_threshold = vecStr[1].Atof();
       continue;
     }
@@ -135,15 +135,67 @@ int BeamConfig::ParseFile(){
       }
       continue;
     }
-    if(vecStr[0].Contains("det_position")){
+    
+    if(vecStr[0].Contains("det_position_z")){
       vector<TString> buff = ParseLine(vecStr[1],",");
       vector<TString>::iterator iter = buff.begin();
       while(iter!=buff.end()){
-	det_position.push_back( (*iter).Atof() );
+	det_position_z.push_back( (*iter).Atof() );
 	iter++;
       }
       continue;
     }
+
+    if(vecStr[0].Contains("det_position_x")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_position_x.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
+    if(vecStr[0].Contains("det_position_y")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_position_y.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
+    if(vecStr[0].Contains("det_width_x")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_width_x.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
+    if(vecStr[0].Contains("det_width_y")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_width_y.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
+    if(vecStr[0].Contains("det_thickness")){
+      vector<TString> buff = ParseLine(vecStr[1],",");
+      vector<TString>::iterator iter = buff.begin();
+      while(iter!=buff.end()){
+	det_thickness.push_back( (*iter).Atof() );
+	iter++;
+      }
+      continue;
+    }
+
     if(vecStr[0].Contains("qdc_channel")){
       vector<TString> buff = ParseLine(vecStr[1],",");
       vector<TString>::iterator iter = buff.begin();
@@ -207,8 +259,8 @@ void BeamConfig::PrintSummary(){
   
   cout << "--"
        << "Detector Plane Z positions (mm): ";
-  vector<Double_t>::iterator it_det = det_position.begin();
-  while(it_det!=det_position.end() ){
+  vector<Double_t>::iterator it_det = det_position_z.begin();
+  while(it_det!=det_position_z.end() ){
     cout << *it_det << " ";
     it_det++;
   }

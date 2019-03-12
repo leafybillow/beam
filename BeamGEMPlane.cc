@@ -1,6 +1,8 @@
-#include "BeamGEMPlane.h"
 #include <iostream>
+#include "TMath.h"
+#include "BeamGEMPlane.h"
 #include "BeamGEMProjection.h"
+
 
 ClassImp(BeamGEMPlane);
 
@@ -9,53 +11,279 @@ BeamGEMPlane::BeamGEMPlane()
    fCharge_x(),fCharge_y(),
    fWidth_x(),fWidth_y(),
    fSplit_x(),fSplit_y(),
-   fCorelation(),
    vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
    bgProjX(NULL),bgProjY(NULL),
    my_id(-1)
-{  
+{}
 
-}
 BeamGEMPlane::~BeamGEMPlane(){}
 
-
 int BeamGEMPlane::Process(){
-  int status = CheckProjections();
-  if(status==0){
-
-    // nHits = Reconstruct();
-    // if(nHits >0 ){
-    //   bgProjY->UpdateHits(vHitsMask_y);
-    //   bgProjX->UpdateHits(vHitsMask_x);
-    //   CollectResults();
-    // }
-    int nHits_x = bgProjX->GetNHits();
-    int nHits_y = bgProjY->GetNHits();
-    nHits = (nHits_x >= nHits_y ? nHits_x : nHits_y);
-    CollectResults();
+  if(CheckProjections()==0){
+    nHits = Reconstruct();
+    if(nHits!=0)
+      CollectResults();
     return 0;
   }
   else
     return 1; // Fail PlaneName Check
 }
 
-int BeamGEMPlane::CheckHits(){
-  // Final Check 
-  int nHitsX = fPos_x.size();
-  int nHitsY = fPos_y.size();
-  if(nHitsY!=nHitsX){
-    std::cerr << "Error: "
-	      << __FILE__ << ":"
-	      << __LINE__ << ":"
-	      << __FUNCTION__  << ":"
-	      << "Number of Hits between Projection mismatch"
-	      <<std::endl;
+int BeamGEMPlane::Reconstruct(){
+  // some assumption is made to make it works. -TY
+  int nHits_x = bgProjX->GetNHits();
+  int nHits_y = bgProjY->GetNHits();
+ 
+  if(nHits_x==0 || nHits_y == 0)
+    return 0;
+  else if (nHits_x==nHits_y){
+    correlator aCorrelator;
+    aCorrelator.xHits = xHits;
+    aCorrelator.yHits = yHits;
+    vCorrelator.push_back(aCorrelator);
+    return nHits_x;
+  }
+  else if(nHits_x> nHits_y){
+    correlator all_correlator = GenerateCorrelator( pow(2,nHits_x)-1, pow(2,nHits_y)-1);
+    double all_slope = all_correlator.correlation;
+    int key_y ;
+    int skip_key = 0;
+    int nAvailble = nHits_x;
+    int iy=0;
+    while(iy<nHits_y && nAvailble>0){
+      key_y = ( 1 << iy);
+      vector<int> vdummy;
+      vector<int> vKey_x = GenerateKeys(nHits_x,nAvailble,0,vdummy) ;
+      vector<int>::iterator it_keyx = vKey_x.begin();
+      correlator candidate = GenerateCorrelator(*it_keyx,key_y);
+      int key_candidate = *it_keyx;
+      while( it_keyx != vKey_x.end() ){
+	if( ((*it_keyx)&skip_key)>0){
+	  it_keyx++;
+	  continue;
+	}
+	correlator aCorrelator = GenerateCorrelator(*it_keyx, key_y);
+	if(fabs(aCorrelator.correlation-all_slope)<
+	   fabs(candidate.correlation-all_slope)){
+	  candidate = aCorrelator;
+	  key_candidate = *it_keyx;
+	}
+	it_keyx ++;
+      }
+      skip_key |= key_candidate;
+      nAvailble = nAvailble - (candidate.xHits).size();
+      UpdateCorrelator(candidate);
+      vCorrelator.push_back(candidate);
+      iy++;
+    }
+    int n_rec = 0;
+    vector<correlator>::iterator itc=vCorrelator.begin();
+    while(itc!=vCorrelator.end()){
+      n_rec += ((*itc).xHits).size();
+      itc++;
+    }
+    return n_rec;
+  }
+  else if(nHits_x< nHits_y){
+    correlator all_correlator = GenerateCorrelator( pow(2,nHits_x)-1, pow(2,nHits_y)-1);
+    double all_slope = all_correlator.correlation;
+    int key_x ;
+    int skip_key = 0;
+    int ix =0;
+    int nAvailble = nHits_y;
+    while(ix<nHits_x && nAvailble>0){
+      key_x = ( 1 << ix);
+      vector<int> vdummy;
+      vector<int> vKey_y = GenerateKeys(nHits_y,nAvailble,0,vdummy) ;
+      vector<int>::iterator it_keyy = vKey_y.begin();
+      correlator candidate = GenerateCorrelator(key_x,*it_keyy);
+      int key_candidate = *it_keyy;
+      while( it_keyy != vKey_y.end() ){
+	if( ((*it_keyy)&skip_key)>0){
+	  it_keyy++;
+	  continue;
+	}
+	correlator aCorrelator = GenerateCorrelator(key_x, *it_keyy);
+	if(fabs(aCorrelator.correlation-all_slope)<
+	   fabs(candidate.correlation-all_slope)){
+	  candidate = aCorrelator;
+	  key_candidate = *it_keyy;
+	}
+	it_keyy ++;
+      }
+      skip_key |= key_candidate;
+      nAvailble = nAvailble-(candidate.yHits).size();
 
-    return 1;
+      UpdateCorrelator(candidate);
+      vCorrelator.push_back(candidate);
+      ix++;
+    }
+    int n_rec = 0;
+    vector<correlator>::iterator itc=vCorrelator.begin();
+    while(itc!=vCorrelator.end()){
+      n_rec += ((*itc).yHits).size();
+      itc++;
+    }
+    return n_rec;
   }
   else
     return 0;
+}
+
+vector<int> BeamGEMPlane::GenerateKeys(int nlength,int nOccupied,int skip,
+				       vector<int> prev_keys){
+  if(nOccupied <=0)
+    return prev_keys;
+  
+  vector<int> new_keys;
+  if(prev_keys.size()==0){
+    int idigi =0;
+    while(idigi<nlength){
+      new_keys.push_back(1<<idigi);
+      idigi++;
+    } 
+  }
+  else{
+    new_keys = prev_keys;
+    vector<int>::iterator iter_prev = prev_keys.begin();
+    iter_prev += skip;
+    while(iter_prev!=prev_keys.end()){
+      int nshift = 0;
+      while ( ((*iter_prev>>nshift) & 1)!=1)
+	nshift ++;
+      int idigi =0;
+      while(idigi<nshift){
+	new_keys.push_back(*iter_prev|(1<<idigi));
+	idigi++;
+      }
+      iter_prev++;
+    }
+    skip = prev_keys.size();    
+  }
+  return GenerateKeys(nlength-1,nOccupied-1,skip,new_keys);
+}
+
+correlator BeamGEMPlane::GenerateCorrelator(int key_x, int key_y){
+  int nbits_x = floor(TMath::Log2(key_x))+1;
+  int nbits_y = floor(TMath::Log2(key_y))+1;
+
+  correlator aCorrelator;
+  vector< AHit> xHits_buff;
+  vector< AHit> yHits_buff;
+
+  for(int ibit =0 ;ibit<nbits_x ;ibit++){
+    int key =(key_x>>ibit)&1;
+    if(key)
+      xHits_buff.push_back(xHits[ibit]);
+  }
+
+  for(int ibit =0 ;ibit<nbits_y ;ibit++){
+    int key =(key_y>>ibit)&1;
+    if(key)
+      yHits_buff.push_back(yHits[ibit]);
+  }
+  
+  aCorrelator.xHits = xHits_buff;
+  aCorrelator.yHits = yHits_buff;
+  
+  EvalCorrelation(aCorrelator);
+  return aCorrelator;
+}
+
+
+void BeamGEMPlane::UpdateCorrelator( correlator &aCorrelator){
+
+  int nhits_x = aCorrelator.xHits.size();
+  int nhits_y = aCorrelator.yHits.size();
+
+  if(nhits_y==1 && nhits_x>1){
+    
+    double total_charge_x = aCorrelator.charge_sum_x;
+    double total_charge_y = aCorrelator.charge_sum_y;
+    
+    double position_y = aCorrelator.yHits[0].fPosition;
+    double width_y = aCorrelator.yHits[0].fWidth;
+    aCorrelator.yHits.clear();
+    // re-distribute hits
+    for(int i=0; i<nhits_x; i++){
+      double ratio = aCorrelator.xHits[i].fCharge/ total_charge_x;
+      AHit aHit;
+      aHit.fPosition = position_y;
+      aHit.fWidth = width_y;
+      aHit.fCharge = total_charge_y;
+      aCorrelator.yHits.push_back(aHit);
+    }
+    
+  }
+  else if(nhits_x==1 && nhits_y>1){
+    double total_charge_x = aCorrelator.charge_sum_x;
+    double total_charge_y = aCorrelator.charge_sum_y;
+    
+    double position_x = aCorrelator.xHits[0].fPosition;
+    double width_x = aCorrelator.xHits[0].fWidth;
+    aCorrelator.xHits.clear();
+    // re-distribute hits
+    for(int i=0; i<nhits_y; i++){
+      double ratio = aCorrelator.yHits[i].fCharge/ total_charge_y;
+      AHit aHit;
+      aHit.fPosition = position_x;
+      aHit.fWidth = width_x;
+      aHit.fCharge = total_charge_x;
+      aCorrelator.xHits.push_back(aHit);
+    }
+  }
+  
+}
+
+void BeamGEMPlane::EvalCorrelation( correlator &aCorrelator){
+
+  double xcharge =0;
+  double ycharge =0;
+
+  vector<AHit>::iterator itx = aCorrelator.xHits.begin();
+  vector<AHit>::iterator ity = aCorrelator.yHits.begin();
+
+  while(itx!= aCorrelator.xHits.end()){
+    xcharge += (*itx).fCharge;
+    itx++;
+  }
+
+  while(ity!= aCorrelator.yHits.end()){
+    ycharge += (*ity).fCharge;
+    ity++;
+  }
+  aCorrelator.charge_sum_x = xcharge;
+  aCorrelator.charge_sum_y = ycharge;
+  aCorrelator.correlation = xcharge/ycharge;
+}
+
+
+void BeamGEMPlane::CollectResults(){
+
+  vector<correlator>::iterator it = vCorrelator.begin();
+  while(it!=vCorrelator.end()){
+
+    vector<AHit>::iterator itx = (*it).xHits.begin();
+    vector<AHit>::iterator ity = (*it).yHits.begin();
+    
+    while(itx!=(*it).xHits.end()){
+      fCharge_x.push_back( (*itx).fCharge);
+      fPos_x.push_back( (*itx).fPosition);
+      fWidth_x.push_back( (*itx).fWidth);
+      itx++;
+    }
+
+    while(ity!=(*it).yHits.end()){
+      fCharge_y.push_back( (*ity).fCharge);
+      fPos_y.push_back( (*ity).fPosition);
+      fWidth_y.push_back( (*ity).fWidth);
+      ity++;
+    }
+
+    it++;
+  }
+  // PrintSummary();
 }
 
 int BeamGEMPlane::CheckProjections(){
@@ -73,16 +301,14 @@ int BeamGEMPlane::CheckProjections(){
   }
 }
 
-int BeamGEMPlane::Reconstruct(){
-  
-  return 0;
+void BeamGEMPlane::AddProjectionX(BeamGEMProjection* bgProj){
+  bgProjX = bgProj;
+  xHits = bgProjX->GetHits();
 }
 
-double BeamGEMPlane::EvalCorrelation(double x, double y){
-  //Experimenting Function
-  double ret;
-  ret = (x-y)/(x+y);
-  return ret;
+void BeamGEMPlane::AddProjectionY(BeamGEMProjection* bgProj){
+  bgProjY = bgProj;
+  yHits = bgProjY->GetHits();
 }
 
 void BeamGEMPlane::PlotResults(TString runName, int ievt){
@@ -106,33 +332,23 @@ void BeamGEMPlane::PlotResults(TString runName, int ievt){
   delete c1;
 }
 
-void BeamGEMPlane::AddProjectionX(BeamGEMProjection* bgProj){
-  bgProjX = bgProj;
-}
+void BeamGEMPlane::PrintSummary(){
+  cout << "-- GEMPlane Summary: "<< endl;
+  vector<correlator>::iterator itc=vCorrelator.begin();
+  while(itc!=vCorrelator.end()){
+    vector< AHit>::iterator ixhits = (*itc).xHits.begin();
+    vector< AHit>::iterator iyhits = (*itc).yHits.begin();
+    while( ixhits!=(*itc).xHits.end() ){
+      cout << "--"<< endl;
+      printf("x pos: %.2f \t" , (*ixhits).fPosition);
+      printf("x charge: %.2f \n" , (*ixhits).fCharge);
+      printf("y pos: %.2f \t" , (*iyhits).fPosition);
+      printf("y charge: %.2f \n" , (*iyhits).fCharge);
+      ixhits++;
+      iyhits++;
+    }
 
-void BeamGEMPlane::AddProjectionY(BeamGEMProjection* bgProj){
-  bgProjY = bgProj;
-}
-
-void BeamGEMPlane::CollectResults(){
-  vector< AHit> vHits_x = bgProjX->GetHits();
-  vector< AHit> vHits_y = bgProjY->GetHits();
-
-  int nHits_x = bgProjX->GetNHits();
-  int nHits_y = bgProjY->GetNHits();
-
-  for(int iHits=0;iHits<nHits_x;iHits++){
-    fCharge_x.push_back( vHits_x[iHits].fCharge);
-    fPos_x.push_back( vHits_x[iHits].fPosition);
-    fWidth_x.push_back( vHits_x[iHits].fWidth);
-    // fSplit_x.push_back( vHits_x[iHits].fSplit);
+    itc++;
   }
-
-  for(int iHits=0;iHits<nHits_y;iHits++){
-    fCharge_y.push_back( vHits_y[iHits].fCharge);
-    fPos_y.push_back( vHits_y[iHits].fPosition);
-    fWidth_y.push_back( vHits_y[iHits].fWidth);
-    // fSplit_y.push_back( vHits_y[iHits].fSplit);
-  }
+ 
 }
-
