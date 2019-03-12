@@ -37,14 +37,11 @@ void BeamGEMTracker::Init(){
   effNhits.clear();
   
   for(int i=0;i<nPlanes;i++){
-    Int_t nhitsx = vPlanes[i]->GetProjectionX()->GetNHits() ;
-    Int_t nhitsy = vPlanes[i]->GetProjectionY()->GetNHits() ;
-
-    Int_t eff = (nhitsy>=nhitsx ? nhitsx:nhitsy);
+    Int_t nhits = vPlanes[i]->GetNHits();
     
-    if(eff> 0 ){
+    if(nhits> 0 ){
       track_npt ++;
-      effNhits.push_back(eff);      
+      effNhits.push_back(nhits);      
       fGEM_z.push_back( vPlanes[i]->GetPositionZ() );
       vec_buff = vPlanes[i]->GetPositionX();
       fHit_x.push_back(vec_buff);
