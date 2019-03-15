@@ -133,7 +133,7 @@ int BeamAnalysis::CalculatePed(){
   Double_t ped_rms; // averaged by sqrt(6)
   
   TString draw_text, hist_name;
-  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e3,0.0,1e4);
+  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",5e2,0.0,1e4);
   
   // Retrieve Channel Mapping from rootfiles ........
   // strip_id type should be an integer, but ....it was output as a float
@@ -570,7 +570,7 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   Int_t bin_max = h_fit->GetMaximumBin();
   Double_t bincenter = h_fit->GetBinCenter(bin_max);
   Double_t bin_content_max = h_fit->GetBinContent(bin_max);
-  Double_t rms = 50.0; // An initial guess
+  Double_t rms = h_fit->GetRMS();//50.0; // An initial guess
 
   Double_t par[3]; 
   par[0] = bin_content_max;
@@ -584,7 +584,7 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   mean = f_gaus->GetParameter(1);
   sigma  = f_gaus->GetParameter(2);
   
-  h_fit->Fit("f_gaus","QNR","",mean-2*sigma,mean+2*sigma);
+  h_fit->Fit("f_gaus","QNR","",mean-sigma,mean+sigma);
 
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated
