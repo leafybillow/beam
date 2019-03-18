@@ -323,9 +323,10 @@ int BeamAnalysis::Analysis(){
   
   vector <int> vNhits;
   vector <int> vNhits_gem;
+  vector <int> peakTime;
   vector <double> baseline_rms;
   vector <double> baseline_mean;
-
+  
   // Reconstruction Detector Hits
   vector< vector<double> > vDet_x;
   vector< vector<double> > vDet_y;
@@ -346,6 +347,7 @@ int BeamAnalysis::Analysis(){
     baseline_mean.push_back(dummy_double);
     charge_sum.push_back(dummy_double);
     vNhits.push_back(dummy_int);
+    peakTime.push_back(dummy_int);
     if(iproj%2==0)
       vNhits_gem.push_back(dummy_int);
   }
@@ -409,6 +411,7 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("ped_rms_%s",key),&baseline_rms[iproj]);
       tree_rec->Branch(Form("charge_sum_%s",key),&charge_sum[iproj]);
       tree_rec->Branch(Form("nHits_%s",key),&vNhits[iproj]);
+      tree_rec->Branch(Form("peakTime_%s",key),&peakTime[iproj]);
     }
 
     for(int igem=0;igem<n_gem;igem++){
@@ -471,6 +474,7 @@ int BeamAnalysis::Analysis(){
     for(Int_t iproj=0;iproj<nproj;iproj++){
       Int_t nChannel = (Int_t)bgData[iproj].nChannel;
 
+      peakTime[iproj] = bgData[iproj].FindPeakTime();
       bgProjection[iproj] = new BeamGEMProjection( projKey[iproj],
 						   (Int_t)bgData[iproj].nChannel);
       for(Int_t ich=0; ich<nChannel;ich++){
