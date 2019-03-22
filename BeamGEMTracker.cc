@@ -213,8 +213,17 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   TH1D *h_buff;
   for(int iplane =0 ;iplane<nPlanes;iplane++){
     pad_gems->cd(iplane+1);
-    TPad* pad_gem1_y = new TPad("pad_gem1_y","",0.0,1.0 ,0.66,0.0);
-    TPad* pad_gem1_x = new TPad("pad_gem1_x","",0.66,1.0 ,1.0,0.0);
+    TPad* pad_gem1_y = new TPad("pad_gem1_y","",0.0,0.9 ,0.66,0.0);
+    TPad* pad_gem1_x = new TPad("pad_gem1_x","",0.66,0.9 ,1.0,0.0);
+    pad_gem1_y->SetLeftMargin(0.03);
+    pad_gem1_y->SetRightMargin(0.05);
+    pad_gem1_x->SetRightMargin(0.01);
+    pad_gem1_x->SetLeftMargin(0.03);
+    
+    pad_gem1_x->SetBottomMargin(0.03);
+    pad_gem1_y->SetBottomMargin(0.03);
+
+    
     pad_gem1_y->Draw();
     pad_gem1_x->Draw();
     
@@ -305,10 +314,20 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     box_zy.push_back(bgem_y);
     box_zx.push_back(bgem_x);
   }
-  
-  pad_track->Divide(1,2);
-  pad_track->cd(1);
 
+  pad_track->cd();
+  TPad* pad_track_stat = new TPad("pad_track_stat","",0.0,1.0 ,1.0,0.9);
+  TPad* pad_track_y = new TPad("pad_track_y","",0.0,0.9 ,1.0,0.45);
+  TPad* pad_track_x = new TPad("pad_track_x","",0.0,0.45 ,1.0,0.0);
+  
+  pad_track_x->SetTopMargin(0.01);
+  pad_track_y->SetTopMargin(0.01);
+
+  
+  pad_track_stat->Draw();
+  pad_track_y->Draw();
+  pad_track_x->Draw();
+  
   int nptx = vec_zpos_x.size();
   int npty = vec_zpos_y.size();
 
@@ -329,7 +348,8 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       hit_y[i] = vec_hit_y[i];
       zpos_y[i] = vec_zpos_y[i];
     }
-
+    
+    pad_track_y->cd();
     TGraph* g_zy = new TGraph(npty, zpos_y, hit_y);
     g_zy->SetMarkerSize(2);
     g_zy->SetMarkerStyle(34);
@@ -342,7 +362,7 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       box_zy[i]->Draw("l same");
 
   
-    pad_track->cd(2);
+    pad_track_x->cd();
     TGraph* g_zx = new TGraph(nptx, zpos_x, hit_x);
     g_zx->SetMarkerSize(2);
     g_zx->SetMarkerStyle(34);
@@ -355,9 +375,9 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       box_zx[i]->Draw("l same");
 
     for(int idet=0; idet<nDets;idet++){
-      pad_track->cd(1);
+      pad_track_y->cd();
       box_det_zy[idet]->Draw("same");
-      pad_track->cd(2);
+      pad_track_x->cd();
       box_det_zx[idet]->Draw("same");
 
     }
@@ -391,20 +411,40 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     vlin_zx.push_back(flin_zx);
   }
   for(int i=0;i<nTracks;i++){
-    pad_track->cd(1);
+    pad_track_y->cd();
     vlin_zy[i]->Draw("same");
-    pad_track->cd(2);
+    pad_track_x->cd();
     vlin_zx[i]->Draw("same");
   }
   
-  c1->cd();
-  TString qdc_text = "QDC:";
-  qdc_text += Form("%d \t ", (int)qdc_value);
+  pad_track_stat->cd();
   
-  TText *text= new TText(0.0,0.95,
-			 Form("%s-Tracker-evt-%d, %s",
-			      runName.Data(),ievt, qdc_text.Data() ));
-  text->Draw("same");
+  TString qdc_print;
+  vector<double>::iterator iqdc = qdc_value.begin();
+  int idet = 0;
+  while(iqdc!=qdc_value.end()){
+    idet ++;
+    qdc_print += Form( "Detector %d QDC : %d ,\t ",idet, (int)(*iqdc));
+    iqdc++;
+  }
+
+  TString track_print =Form( "nTracks: %d ",nTracks);
+
+
+  TText *evt_text= new TText(0.0,0.8,
+			     Form("%s-Tracker-evt-%d",runName.Data(),ievt));
+
+  TText *qdc_text= new TText(0.0,0.4,qdc_print);
+  TText *track_text= new TText(0.0,0.0,track_print);
+
+			      
+  evt_text->SetTextSize(0.4);
+  qdc_text->SetTextSize(0.4);
+  track_text->SetTextSize(0.4);
+  
+  evt_text->Draw();
+  qdc_text->Draw();
+  track_text->Draw();
   
   c1->SaveAs(Form("%s-Tracker-evt-%d.png",
 		  runName.Data(),

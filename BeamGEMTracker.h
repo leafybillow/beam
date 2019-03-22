@@ -30,7 +30,7 @@ class BeamGEMTracker: public TObject{
   vector<double> fDet_width_x;
   vector<double> fDet_width_y;
   vector<double> fDet_thickness;
-  double qdc_value;
+  vector<double> qdc_value;
   
   // To-do  vector<double> rotation;
   vector<double> fGEM_z;
@@ -68,7 +68,7 @@ public:
   inline bool IsGoldenTrack() const {return isGoldenTrack;};
 
   void LoadDetectorGeometry(BeamConfig* fConfig);
-  inline void  LoadQDC(double qdc){ qdc_value = qdc;};
+  inline void  LoadQDC(vector<double> qdc){ qdc_value = qdc;};
   void Process();
   void PlotResults(TString, int);
   void AddPlane(BeamGEMPlane* );

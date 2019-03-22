@@ -365,8 +365,13 @@ int BeamAnalysis::Analysis(){
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
-  Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
-  Double_t *det_qdc_hr = new Double_t[n_qdc_ch];
+  vector<Double_t> det_qdc_lr;
+  vector<Double_t> det_qdc_hr;
+
+  for(int iqdc=0;iqdc<n_qdc_ch ;iqdc++){
+    det_qdc_lr.push_back(dummy_double);
+    det_qdc_hr.push_back(dummy_double);
+  }
 
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   // Reconstructed Tree
@@ -464,7 +469,7 @@ int BeamAnalysis::Analysis(){
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     bgTracker->LoadDetectorGeometry( fConfig );
-    bgTracker->LoadQDC(det_qdc_hr[0]);
+    bgTracker->LoadQDC(det_qdc_hr);
     BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
@@ -555,6 +560,7 @@ int BeamAnalysis::Analysis(){
       tree_rec->Fill();
     }
 
+    // if(kPlot && nTracks == 2 && det_qdc_hr[0]<1050){
     if(kPlot){
       bgTracker->PlotResults(prefix_t,ievt);
     }
