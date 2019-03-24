@@ -111,7 +111,7 @@ int BeamAnalysis::CalculatePed(){
 
   TString strProj[nproj];
   Int_t sizeArray[nproj];
-
+  Int_t sum_strip = 0;
   for(int iproj=0; iproj<nproj;iproj++){
 
     strProj[iproj] = projKey[iproj];
@@ -120,7 +120,8 @@ int BeamAnalysis::CalculatePed(){
       sizeArray[iproj] = 256;
     else if(strProj[iproj].Contains("y"))
       sizeArray[iproj] = 512;
-    
+
+    sum_strip += sizeArray[iproj];
     hped_mean[iproj] = new TH1D(Form("hped_mean_%s",strProj[iproj].Data() ),
 				Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
 				sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
@@ -153,7 +154,8 @@ int BeamAnalysis::CalculatePed(){
   // This routine will not work  if ZeroSuppression is TRUE in SBS-offline
 
   cout << "--Calculating Pedestals... " << endl;
-  
+
+  Int_t counter = 0;
   for(int iproj =0; iproj< nproj; iproj++){
 
     fprintf(db_file,"\nsbs.gems.%s.ped =",strProj[iproj].Data());
@@ -180,11 +182,11 @@ int BeamAnalysis::CalculatePed(){
       hped_mean[iproj]->SetBinContent(strip+1,ped_mean);
       hped_rms[iproj]->SetBinContent(strip+1,ped_rms);
       
-      // counts++;
-      // if(counts%10==0){
-      // 	printf("\r Running %.1f %%  ",counts/total_counts*100);
-      // }
-      
+      counter++;
+      if(counter%10==0){
+      	printf("\r-- Processing %.1f %% ",(double)counter/sum_strip*100);
+	fflush(stdout);
+      }
     } 
   }
   
