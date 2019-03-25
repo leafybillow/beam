@@ -21,7 +21,7 @@ BeamGEMTracker::BeamGEMTracker()
    qdc_value(0),
    fGEM_z(),fHit_x(),fHit_y(),
    vPlanes(),vTracks(),
-   nTracks(0),isGoldenTrack(0),track_npt(0)
+   nTracks(0),nPrimaries(0),isGoldenTrack(0),track_npt(0)
 {
   lf = new TLinearFitter();
   lf->SetFormula("pol1");
@@ -75,25 +75,46 @@ void BeamGEMTracker::Process(){
 	  }
 	}
       }
-      if(effNhits[0]!=0)
-	vTracks.push_back(goodTrack);	  
-      // if(effNhits[1]>1){
-      // 	int myid = goodTrack.myPattern[1];
-      // 	SwapHits(1, myid, effNhits[1]-1);
-      // 	effNhits[1] = effNhits[1] -1;
-      // }
-      // else if(effNhits[1] ==1)
-      // 	effNhits[1] = 0;
+      AccumulatePrimaries(goodTrack);
+      vTracks.push_back(goodTrack);
+      nTracks++;
     }
   }
   
   vector<ATrack>::iterator it = vTracks.begin();
   while(it!=vTracks.end()){
     FitATrack(&(*it));
-    nTracks++;
     it++;
   }
   ProjectHits(); // To detector Planes
+}
+
+void BeamGEMTracker::AccumulatePrimaries(ATrack atrack){
+
+  if(nTracks==0)
+    nPrimaries++;
+  else{
+    double epsilon = 3 ; // unit: mm
+    double my_vertex_X = (atrack.x)[0];
+    double my_vertex_Y = (atrack.y)[0];
+    vector<ATrack>::iterator itrack = vTracks.begin();
+    Int_t kIsDelta = 0;
+    while(itrack!=vTracks.end()){
+      double this_vertex_X = ((*itrack).x)[0];
+      double this_vertex_Y = ((*itrack).y)[0];
+
+      if(fabs(my_vertex_Y-this_vertex_Y)<epsilon &&
+	 fabs(my_vertex_X-this_vertex_X)<epsilon ){
+	kIsDelta = 1;
+	break;
+      }
+      itrack++;
+    }
+    if(!kIsDelta)
+      nPrimaries++;
+
+  }
+  
 }
 
 void BeamGEMTracker::ProjectHits(){
@@ -428,8 +449,7 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     iqdc++;
   }
 
-  TString track_print =Form( "nTracks: %d ",nTracks);
-
+  TString track_print =Form( "nTracks: %d \t nPrimaries: %d ",nTracks,nPrimaries);
 
   TText *evt_text= new TText(0.0,0.8,
 			     Form("%s-Tracker-evt-%d",runName.Data(),ievt));

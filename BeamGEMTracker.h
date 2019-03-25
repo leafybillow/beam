@@ -42,6 +42,7 @@ class BeamGEMTracker: public TObject{
   
   int nPlanes;
   int nTracks;
+  int nPrimaries; // number of primaries tracks after combining delta tracks.
   
   bool isGoldenTrack;
   bool isFound;
@@ -55,11 +56,14 @@ class BeamGEMTracker: public TObject{
   ATrack GenerateCandidates(int* xpattern, int* ypattern);
   void SwapHits(int iplane, int ,int);
   void ProjectHits();
+
+  void AccumulatePrimaries(ATrack aTrack);
 public:
   BeamGEMTracker();
   ~BeamGEMTracker();
 
   inline int GetNTracks() const {return nTracks;};
+  inline int GetNPrimaries() const {return nPrimaries;};
   inline vector< vector<double> > GetDetX() const {return fDet_x;};
   inline vector< vector<double> > GetDetY() const {return fDet_y;};
   inline vector< vector<double> > GetDetTheta() const {return fDet_theta;};
