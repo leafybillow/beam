@@ -94,7 +94,7 @@ void BeamGEMTracker::AccumulatePrimaries(ATrack atrack){
   if(nTracks==0)
     nPrimaries++;
   else{
-    double epsilon = 3 ; // unit: mm
+    double epsilon = delta_cut ; // unit: mm
     double my_vertex_X = (atrack.x)[0];
     double my_vertex_Y = (atrack.y)[0];
     vector<ATrack>::iterator itrack = vTracks.begin();

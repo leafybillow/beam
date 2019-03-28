@@ -6,3 +6,4 @@ extern int edge_cut;
 extern int stability;
 extern double xtalk_threshold;
 extern double slope_cut;
+extern double delta_cut;

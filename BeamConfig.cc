@@ -14,7 +14,7 @@ int edge_cut = 5;
 int stability = 50;
 double xtalk_threshold = 0.1;
 double slope_cut = 900;
-
+double delta_cut = 5; //mm
 BeamConfig::BeamConfig(){
   run_num= -1;
   kPlot = 0;
@@ -100,6 +100,12 @@ int BeamConfig::ParseFile(){
       edge_cut = vecStr[1].Atoi();
       continue;
     }
+    
+    if(vecStr[0].Contains("delta_cut")){
+      delta_cut = vecStr[1].Atoi();
+      continue;
+    }
+
     if(vecStr[0].Contains("stability")){
       stability = vecStr[1].Atoi();
       continue;
