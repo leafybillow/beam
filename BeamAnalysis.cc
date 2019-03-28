@@ -366,6 +366,7 @@ int BeamAnalysis::Analysis(){
   int nTracks;
   int nPrimaries;
   bool isGoldenTrack;
+  bool isNoisy;
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
@@ -406,6 +407,7 @@ int BeamAnalysis::Analysis(){
     tree_rec->Branch("nTracks",&nTracks);
     tree_rec->Branch("nPrimaries",&nPrimaries);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
+    tree_rec->Branch("isNoisy",&isNoisy);
   }
   
   if(!kPlot){    
@@ -531,7 +533,8 @@ int BeamAnalysis::Analysis(){
     nTracks = bgTracker->GetNTracks();
     nPrimaries = bgTracker->GetNPrimaries();
     isGoldenTrack = bgTracker->IsGoldenTrack();
-    
+
+    isNoisy = 0;
     for(int iproj=0;iproj<nproj;iproj++){
       TString this_key = projKey[iproj];
       TString proj_type = this_key[0];
@@ -544,6 +547,8 @@ int BeamAnalysis::Analysis(){
 	vWidth[iproj] = this_plane->GetWidthX();
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
+	if(baseline_rms[iproj] > 80)
+	  isNoisy = 1;
 	charge_sum[iproj] = this_plane->GetProjectionX()->GetChargeSum();
 	vNhits[iproj] = this_plane->GetProjectionX()->GetNHits();
       }
@@ -553,6 +558,8 @@ int BeamAnalysis::Analysis(){
 	vWidth[iproj] = this_plane->GetWidthY();
 	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
+	if(baseline_rms[iproj] > 80)
+	  isNoisy = 1;
 	charge_sum[iproj] = this_plane->GetProjectionY()->GetChargeSum();
 	vNhits[iproj] = this_plane->GetProjectionY()->GetNHits();
       }
@@ -566,7 +573,7 @@ int BeamAnalysis::Analysis(){
       tree_rec->Fill();
     }
 
-    if(kPlot && nPrimaries==2 && det_qdc_hr[0]<1100){
+    if(kPlot && nPrimaries==2 && det_qdc_hr[0]<1100 && (!isNoisy)){
     // if(kPlot){
       bgTracker->PlotResults(prefix_t,ievt);
     }
