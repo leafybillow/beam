@@ -75,7 +75,8 @@ class BeamGEMProjection: public TObject{
   int CoarseProcess();
   vector< pair<int,int> > SearchClusters();
   double ProcessCentroid(pair<int,int>);
-  double ProcessCharge(pair<int,int>); 
+  double ProcessCharge(pair<int,int>);
+  double ProcessPeakHeight(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
   vector<int> FindValleys(pair<int,int>);
 

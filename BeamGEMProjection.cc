@@ -63,8 +63,8 @@ int BeamGEMProjection::CoarseProcess(){
   // Compute baseline RMS and mean;
   sort(vStat.begin(), vStat.end());
   
-  baseline_mean = CalculateMean(vStat, 0.7);
-  baseline_rms = CalculateRMS(vStat, 0.7);
+  baseline_mean = CalculateMean(vStat, 0.1);
+  baseline_rms = CalculateRMS(vStat, 0.1);
   baseline_rms = sqrt( pow(baseline_rms,2) - pow(baseline_mean,2));
   
   overall_mean = CalculateMean(vStat,1.0);
@@ -125,6 +125,7 @@ int BeamGEMProjection::FineProcess(){
     vector< pair<int,int> >::iterator it_pair = vec_range.begin();
     while( it_pair!= vec_range.end() ){
       aHit.fPosition = ProcessCentroid( *it_pair);
+      aHit.fHeight = ProcessPeakHeight( *it_pair);
       aHit.fCharge = ProcessCharge( *it_pair);
       aHit.fWidth = ProcessWidth( *it_pair);
       aHit.fRes = ProcessResolution(*it_pair);
@@ -188,8 +189,8 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       
       isLock = 0;
       up = iStrip;
-      if((up-low)>width_cut){
-	vecRange.push_back( make_pair(low,up) );
+      if((up-low)>width_cut && h_proj->Integral(low,up)>1000){
+	  vecRange.push_back( make_pair(low,up) );
       }
       else{
 	for(int i=low;i<=up;i++)
@@ -228,6 +229,22 @@ double BeamGEMProjection::ProcessCharge( pair<int,int> prRange){
 int BeamGEMProjection::ProcessWidth(pair<int,int> prRange){
   int width = prRange.second - prRange.first+1;
   return width;
+}
+
+double BeamGEMProjection::ProcessPeakHeight(pair<int,int> prRange){
+  
+  int low = prRange.first;
+  int up = prRange.second;
+  
+  double peak_height = h_proj->GetBinContent(low);
+  double bin_val ;
+  for(int ibin=low+1;ibin<=up;ibin++){
+    bin_val = h_proj->GetBinContent(ibin);
+    if(bin_val>peak_height)
+      peak_height=bin_val;
+  }
+
+  return peak_height;
 }
 
 double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
@@ -286,7 +303,9 @@ void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
   int strip_id = bgGEMStrip->GetStripID();
   
   h_raw->SetBinContent(strip_id,ampl);
-  vStat.push_back(ampl);
+
+  if(strip_id>edge_cut && strip_id<(nStrips-edge_cut))
+    vStat.push_back(ampl);
 
 }
 
@@ -491,13 +510,15 @@ vector<int> BeamGEMProjection::FindValleys(pair<int,int> prRange){
 
 
 double BeamGEMProjection::CalculateMean(vector<double> aVector,
-					double portion =1.0){
+					double portion =0.0){
   double sum = 0;
   int counts = 0;
-  int nsize = aVector.size();
-  nsize = (int)(nsize * portion);
 
-  for(int i=0; i<nsize;i++){
+  int nsize = aVector.size();
+  int stop = (int)(nsize * (1.0-portion));
+  int start = (int)(nsize * portion);
+
+  for(int i=start; i<stop;i++){
     sum += aVector[i];
     counts++;
   }
@@ -511,14 +532,14 @@ double BeamGEMProjection::CalculateMean(vector<double> aVector,
 }
 
 double BeamGEMProjection::CalculateRMS(vector<double> aVector,
-				       double portion = 1.0){
+				       double portion = 0.0){
   double sum = 0;
   int counts = 0;
   
   int nsize = aVector.size();
-  nsize = (int)(nsize * portion);
-
-  for(int i=0; i<nsize;i++){
+  int stop = (int)(nsize * (1.0-portion));
+  int start = (int)(nsize * portion);
+  for(int i=start; i<stop;i++){
     sum += aVector[i] * aVector[i];
     counts++;
   }
