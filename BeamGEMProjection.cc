@@ -386,7 +386,7 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
   
   // Since induced cluster sits in a relative small range,
   // it would be easier to start searching from the induced one
-  if(j.fCharge > (i.fCharge)*xtalk_threshold)
+  if(j.fHeight > (i.fHeight)*xtalk_threshold)
     isCrossTalk = 0;
   else {
     if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
