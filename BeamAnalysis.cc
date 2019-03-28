@@ -65,10 +65,11 @@ int BeamAnalysis::Process(){
     CalculateRMS();
     break;
   }
-    
   rf_raw->Close();
-  rf_output->Close();
   
+  if(!kPlot)
+    rf_output->Close();
+    
   return 0;
 }
 
@@ -363,6 +364,7 @@ int BeamAnalysis::Analysis(){
 
   }
   int nTracks;
+  int nPrimaries;
   bool isGoldenTrack;
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
@@ -401,7 +403,8 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("det%d_theta",idet+1),&vDet_theta[idet]);
       tree_rec->Branch(Form("det%d_phi",idet+1),&vDet_phi[idet]);
     }
-    tree_rec->Branch("ntracks",&nTracks);
+    tree_rec->Branch("nTracks",&nTracks);
+    tree_rec->Branch("nPrimaries",&nPrimaries);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
   }
   
@@ -526,6 +529,7 @@ int BeamAnalysis::Analysis(){
     vDet_theta = bgTracker->GetDetTheta();
     vDet_phi = bgTracker->GetDetPhi();
     nTracks = bgTracker->GetNTracks();
+    nPrimaries = bgTracker->GetNPrimaries();
     isGoldenTrack = bgTracker->IsGoldenTrack();
     
     for(int iproj=0;iproj<nproj;iproj++){
@@ -562,8 +566,8 @@ int BeamAnalysis::Analysis(){
       tree_rec->Fill();
     }
 
-    // if(kPlot && nTracks == 2 && det_qdc_hr[0]<1050){
-    if(kPlot){
+    if(kPlot && nPrimaries==2 && det_qdc_hr[0]<1100){
+    // if(kPlot){
       bgTracker->PlotResults(prefix_t,ievt);
     }
 
