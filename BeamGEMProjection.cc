@@ -124,14 +124,16 @@ int BeamGEMProjection::FineProcess(){
       
     vector< pair<int,int> >::iterator it_pair = vec_range.begin();
     while( it_pair!= vec_range.end() ){
-      aHit.fPosition = ProcessCentroid( *it_pair);
-      aHit.fHeight = ProcessPeakHeight( *it_pair);
       aHit.fCharge = ProcessCharge( *it_pair);
-      aHit.fWidth = ProcessWidth( *it_pair);
-      aHit.fRes = ProcessResolution(*it_pair);
-      aHit.pRange = *it_pair;
-      charge_sum += aHit.fCharge;
-      vHits.push_back(aHit);
+      if(aHit.fCharge>1000){
+	aHit.fPosition = ProcessCentroid( *it_pair);
+	aHit.fHeight = ProcessPeakHeight( *it_pair);
+	aHit.fWidth = ProcessWidth( *it_pair);
+	aHit.fRes = ProcessResolution(*it_pair);
+	aHit.pRange = *it_pair;
+	charge_sum += aHit.fCharge;
+	vHits.push_back(aHit);
+      }
       it_pair++;
     }
     it++;
