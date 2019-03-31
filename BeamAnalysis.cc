@@ -329,6 +329,7 @@ int BeamAnalysis::Analysis(){
   vector <int> peakTime;
   vector <double> baseline_rms;
   vector <double> baseline_mean;
+  vector < vector<double> > common_mode;
   
   // Reconstruction Detector Hits
   vector< vector<double> > vDet_x;
@@ -351,6 +352,7 @@ int BeamAnalysis::Analysis(){
     charge_sum.push_back(dummy_double);
     vNhits.push_back(dummy_int);
     peakTime.push_back(dummy_int);
+    common_mode.push_back(dummy_vec_double);
     if(iproj%2==0)
       vNhits_gem.push_back(dummy_int);
   }
@@ -367,6 +369,7 @@ int BeamAnalysis::Analysis(){
   int nPrimaries;
   bool isGoldenTrack;
   bool isNoisy;
+  
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
@@ -408,6 +411,7 @@ int BeamAnalysis::Analysis(){
     tree_rec->Branch("nPrimaries",&nPrimaries);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
     tree_rec->Branch("isNoisy",&isNoisy);
+
   }
   
   if(!kPlot){    
@@ -424,6 +428,7 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("charge_sum_%s",key),&charge_sum[iproj]);
       tree_rec->Branch(Form("nHits_%s",key),&vNhits[iproj]);
       tree_rec->Branch(Form("peakTime_%s",key),&peakTime[iproj]);
+      tree_rec->Branch(Form("common_mode_%s",key),&common_mode[iproj]);
     }
 
     for(int igem=0;igem<n_gem;igem++){
@@ -485,7 +490,6 @@ int BeamAnalysis::Analysis(){
     }
     for(Int_t iproj=0;iproj<nproj;iproj++){
       Int_t nChannel = (Int_t)bgData[iproj].nChannel;
-
       peakTime[iproj] = bgData[iproj].FindPeakTime();
       bgProjection[iproj] = new BeamGEMProjection( projKey[iproj],
 						   (Int_t)bgData[iproj].nChannel);
@@ -513,7 +517,20 @@ int BeamAnalysis::Analysis(){
       }
       else if(proj_type=="y")
 	bgPlane[gem_id-1]->AddProjectionY(bgProjection[iproj]);
-      
+
+      // Loading Common Mode Noise
+      vector<double> myCommonMode;
+      if(proj_type=="x"){
+	myCommonMode.push_back(bgData[iproj].common_mode[0]);
+	myCommonMode.push_back(bgData[iproj].common_mode[128]);
+      }
+      else if(proj_type=="y"){
+	myCommonMode.push_back(bgData[iproj].common_mode[0]);
+	myCommonMode.push_back(bgData[iproj].common_mode[128]);
+	myCommonMode.push_back(bgData[iproj].common_mode[256]);
+	myCommonMode.push_back(bgData[iproj].common_mode[384]);
+      }
+      common_mode[iproj] = myCommonMode;
     } // End Projection Loop
     vector<Double_t> gem_z ;
     gem_z = fConfig->GetZ_GEM();
@@ -573,7 +590,8 @@ int BeamAnalysis::Analysis(){
       tree_rec->Fill();
     }
 
-    if(kPlot && nPrimaries==2 && det_qdc_hr[0]<1100 && (!isNoisy)){
+    if(kPlot && nTracks==1 && det_qdc_hr[0]>1100 && (!isNoisy)){
+    // if(kPlot && (nPrimaries<nTracks) && (nPriamries>0) && (!isNoisy)){
     // if(kPlot){
       bgTracker->PlotResults(prefix_t,ievt);
     }
