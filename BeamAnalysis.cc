@@ -472,7 +472,9 @@ int BeamAnalysis::Analysis(){
 
   //*Event loop, reconstruction
   Int_t nentries = tree_raw->GetEntries();
-  for(Int_t ievt=0;ievt<nentries;ievt++){
+  Int_t nevt_config = fConfig->GetTotalEvents();
+  Int_t nevt = ( nevt_config < nentries ? nevt_config: nentries);
+  for(Int_t ievt=0;ievt<nevt;ievt++){
     if(ievt%200==0)
       cout << ievt << " events analyzed"  << endl;
     //** Retrieve replayed data from the raw tree
