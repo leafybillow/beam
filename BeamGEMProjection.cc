@@ -125,9 +125,14 @@ int BeamGEMProjection::FineProcess(){
     vector< pair<int,int> >::iterator it_pair = vec_range.begin();
     while( it_pair!= vec_range.end() ){
       aHit.fCharge = ProcessCharge( *it_pair);
-      if(aHit.fCharge>1000){
+      int peak_bin = FindPeakStrip( *it_pair);
+      int isEdge = 0;
+      if( peak_bin<=edge_cut || (nStrips-peak_bin)<=edge_cut)
+	isEdge = 1;
+      
+      if(aHit.fCharge>1000 && !isEdge ){
 	aHit.fPosition = ProcessCentroid( *it_pair);
-	aHit.fHeight = ProcessPeakHeight( *it_pair);
+	aHit.fHeight = h_proj->GetBinContent(peak_bin);
 	aHit.fWidth = ProcessWidth( *it_pair);
 	aHit.fRes = ProcessResolution(*it_pair);
 	aHit.pRange = *it_pair;
@@ -168,10 +173,8 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   double threshold =0; // Assuming ZeroSuppression has been done in the analysis script
   
   int low=0, up=0;
-
-  int start = edge_cut +1;
-  int end = nStrips-edge_cut;
-  
+  int start = 1;
+  int end = nStrips;
   for(int iStrip= start; iStrip<=end; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip);
     
@@ -231,6 +234,25 @@ double BeamGEMProjection::ProcessCharge( pair<int,int> prRange){
 int BeamGEMProjection::ProcessWidth(pair<int,int> prRange){
   int width = prRange.second - prRange.first+1;
   return width;
+}
+
+int BeamGEMProjection::FindPeakStrip(pair<int,int> prRange){
+  
+  int low = prRange.first;
+  int up = prRange.second;
+  int peak_bin = low;  
+  double peak_height = h_proj->GetBinContent(peak_bin);
+  double bin_val;
+
+  for(int ibin=low+1;ibin<=up;ibin++){
+    bin_val = h_proj->GetBinContent(ibin);
+    if(bin_val>peak_height){
+      peak_height = bin_val;
+      peak_bin = ibin;
+    }
+  }
+
+  return peak_bin;
 }
 
 double BeamGEMProjection::ProcessPeakHeight(pair<int,int> prRange){
@@ -300,15 +322,11 @@ int BeamGEMProjection::CheckNStrips(){
 }
 
 void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
-
   double ampl = bgGEMStrip->GetAmplitude();
   int strip_id = bgGEMStrip->GetStripID();
   
   h_raw->SetBinContent(strip_id,ampl);
-
-  if(strip_id>edge_cut && strip_id<(nStrips-edge_cut))
-    vStat.push_back(ampl);
-
+  vStat.push_back(ampl);
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
@@ -556,7 +574,7 @@ double BeamGEMProjection::CalculateRMS(vector<double> aVector,
 
 void BeamGEMProjection::FillProjection(){
 
-  for(int i=edge_cut; i<=nStrips-edge_cut; i++){
+  for(int i=1; i<=nStrips; i++){
     double bin_content = h_raw ->GetBinContent(i);
     if( (bin_content - baseline_mean)> zs_threshold*baseline_rms )
       h_proj->SetBinContent(i,bin_content);
