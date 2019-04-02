@@ -17,6 +17,7 @@ class BeamConfig{
 
   Int_t run_num;
   Int_t nEvents;
+  Int_t evt_shift;
   Bool_t kPlot;
   
   TString output_name;
@@ -79,5 +80,8 @@ class BeamConfig{
   inline void SetConfigFile(TString str){configName=str;};
   inline void SetPlotMode(Bool_t flag){kPlot=flag;};
   inline void SetTotalEvents(int nevts){nEvents = nevts;};
+  
+  inline void SetEventShift(int shift){evt_shift = shift;};
+  inline Int_t GetEventShift() const {return evt_shift;};
   ClassDef(BeamConfig,0);
 };

@@ -474,6 +474,10 @@ int BeamAnalysis::Analysis(){
   Int_t nentries = tree_raw->GetEntries();
   Int_t nevt_config = fConfig->GetTotalEvents();
   Int_t nevt = ( nevt_config < nentries ? nevt_config: nentries);
+  
+  Int_t ev_shift = fConfig->GetEventShift();
+  nevt = nevt - ev_shift;
+  
   for(Int_t ievt=0;ievt<nevt;ievt++){
     if(ievt%200==0)
       cout << ievt << " events analyzed"  << endl;
@@ -589,12 +593,13 @@ int BeamAnalysis::Analysis(){
     }
 
     if(!kPlot){
+      tree_raw->GetEntry(ievt+ev_shift); // shift QDC_
       tree_rec->Fill();
     }
 
-    if(kPlot && nTracks==1 && det_qdc_hr[0]>1100 && (!isNoisy)){
+    // if(kPlot && nTracks==1 && det_qdc_hr[0]>1100 && (!isNoisy)){
     // if(kPlot && (nPrimaries<nTracks) && (nPriamries>0) && (!isNoisy)){
-    // if(kPlot){
+    if(kPlot){
       bgTracker->PlotResults(prefix_t,ievt);
     }
 
