@@ -125,6 +125,7 @@ int BeamGEMPlane::Reconstruct(){
       n_rec += ((*itc).yHits).size();
       itc++;
     }
+    // cout << nHits_x << "\t" << nHits_y << "\t" << n_rec << endl;
     return n_rec;
   }
   else
@@ -211,7 +212,7 @@ void BeamGEMPlane::UpdateCorrelator( correlator &aCorrelator){
       AHit aHit;
       aHit.fPosition = position_y;
       aHit.fWidth = width_y;
-      aHit.fCharge = total_charge_y;
+      aHit.fCharge = total_charge_y*ratio;
       aCorrelator.yHits.push_back(aHit);
     }
     
@@ -229,7 +230,7 @@ void BeamGEMPlane::UpdateCorrelator( correlator &aCorrelator){
       AHit aHit;
       aHit.fPosition = position_x;
       aHit.fWidth = width_x;
-      aHit.fCharge = total_charge_x;
+      aHit.fCharge = total_charge_x*ratio;
       aCorrelator.xHits.push_back(aHit);
     }
   }
@@ -255,7 +256,7 @@ void BeamGEMPlane::EvalCorrelation( correlator &aCorrelator){
   }
   aCorrelator.charge_sum_x = xcharge;
   aCorrelator.charge_sum_y = ycharge;
-  aCorrelator.correlation = xcharge/ycharge;
+  aCorrelator.correlation = (xcharge-ycharge)/(xcharge+ycharge);
 }
 
 
