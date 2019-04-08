@@ -1,16 +1,19 @@
 ROOTCONFIG = root-config
 
-CXX           = $(shell $(ROOTCONFIG) --cxx)
-
+CXX     =$(shell $(ROOTCONFIG) --cxx)
+GCC	=$(shell $(ROOTCONFIG) --cc)
 CXXFLAGS	= -O0 -Wall -Woverloaded-virtual -fPIC -Wextra
 ROOTCFLAGS:= $(shell $(ROOTCONFIG) --cflags)
 ROOTLIBS  := $(shell $(ROOTCONFIG) --libs) -lMinuit
 ROOTGLIBS := $(shell $(ROOTCONFIG) --glibs)
 ROOTINC :=$(shell $(ROOTCONFIG) --incdir)
 
+MAKEDEPEND =$(CXX)
+INCLUDES = -I$(ROOTINC)
+
 CXXFLAGS+= $(ROOTCFLAGS)
 CXXFLAGS+= -g
-CXXFLAGS+= -I./include
+
 LIBS	:= $(ROOTLIBS)
 LDFLAGS := $(shell $(ROOTCONFIG) --ldflags)
 LD	:= $(shell $(ROOTCONFIG) --ld)
@@ -20,6 +23,7 @@ OBJS	:= \
 	BeamConfig.o BeamAnalysis.o
 
 HDR	:= $(OBJS:.o=.h) BeamParameters.h BeamTypes.h
+DEPS 	:= $(OBJS:.o=.d)
 
 all:  $(OBJS) $(BINARIES) beam_Dict libbeam beam
 
@@ -38,3 +42,12 @@ clean:
 	rm -f *.o;
 	rm -f *Dict*;	
 	rm -f *.so;	
+
+%.d:	%.cc
+	@echo Creating dependencies for $<
+	@$(SHELL) -ec '$(MAKEDEPEND) -MM $(INCLUDES) -c $< \
+	      | sed '\''s%^.*\.o%$*\.o%g'\'' \
+	      | sed '\''s%\($*\)\.o[ :]*%\1.o $@ : %g'\'' > $@; \
+	      [ -s $@ ] || rm -f $@'
+
+-include $(DEPS)
