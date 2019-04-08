@@ -20,6 +20,7 @@ class BeamGEMData : public TObject{
 
   // identification for projection
   Int_t id_Proj; // starts from 0 to 3; {"x1","y1","x2","y2"}
-
+  
+  Int_t FindPeakTime();
   ClassDef(BeamGEMData,0);
 };

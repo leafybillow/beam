@@ -10,6 +10,8 @@ void PrintUsage();
 
 int main(int argc, char **argv){
   int run_num;
+  int nEvents;
+  int evt_shift = 0;
   char *configName;
   char *runType;
   char *output_name;
@@ -29,7 +31,7 @@ int main(int argc, char **argv){
   }
     
   int opt;
-  while( (opt=getopt(argc,argv,":c:r:t:f:o:hP"))!=-1){
+  while( (opt=getopt(argc,argv,":c:r:t:f:o:S:e:hP"))!=-1){
     switch(opt){
       
     case ':':
@@ -67,6 +69,12 @@ int main(int argc, char **argv){
       output_name=optarg;
       kOutputDefine=1;
       break;
+    case 'e':
+      nEvents=atoi(optarg);
+      break;
+    case 'S':
+      evt_shift=atoi(optarg);
+      break;
     case 'P':
       kPlot =1;
       break;
@@ -100,7 +108,9 @@ int main(int argc, char **argv){
 
   if(kPlot)
     fConfig->SetPlotMode(kPlot);
-  
+
+  fConfig->SetTotalEvents(nEvents);
+  fConfig->SetEventShift(evt_shift);
   int anaType =0; // ana mode by default
   if(kRunTypeDefine){
     if(strcmp(runType,"ana")==0)
@@ -136,7 +146,7 @@ void PrintUsage(){
   cout<< "Beam Test Analysis Software " << endl;
   cout<< "author : Tao Ye <tao.ye@stonybrook.edu> " << endl;
   cout << endl;  
-  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-P] [-h] " << endl;
+  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-e] [-P] [-h] " << endl;
   cout<<"Options:" << endl;
   cout<< "\t" << "-h : "
       <<"Print help info " << endl;
@@ -154,6 +164,8 @@ void PrintUsage(){
       << "mandatory, if <run_num> is not specfied " << endl;
   cout<< "\t" << "-o <output_filename>: "
       <<"optional, specify output rootfile/plot name " << endl;
+  cout<< "\t" << "-e: "
+	<<"optional, total events to be analyzed. " << endl;
   cout<< "\t" << "-P: "
       <<" output plots ONLY, no rootfile will be created. " << endl;
   cout<< endl;
