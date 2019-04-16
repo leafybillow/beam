@@ -130,7 +130,7 @@ int BeamGEMProjection::FineProcess(){
       if( peak_bin<=edge_cut || (nStrips-peak_bin)<=edge_cut)
 	isEdge = 1;
       
-      if(aHit.fCharge>1000 && !isEdge ){
+      if(aHit.fCharge>charge_cut && !isEdge ){
 	aHit.fPosition = ProcessCentroid( *it_pair);
 	aHit.fHeight = h_proj->GetBinContent(peak_bin);
 	aHit.fWidth = ProcessWidth( *it_pair);
@@ -139,6 +139,13 @@ int BeamGEMProjection::FineProcess(){
 	charge_sum += aHit.fCharge;
 	vHits.push_back(aHit);
       }
+      else{
+	int low = (*it_pair).first;
+	int up = (*it_pair).second;
+	for(int i=low;i<=up;i++)
+	  h_proj->SetBinContent(i,0);
+      }
+      
       it_pair++;
     }
     it++;
@@ -194,7 +201,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       
       isLock = 0;
       up = iStrip;
-      if((up-low)>width_cut && h_proj->Integral(low,up)>1000){
+      if((up-low)>width_cut && h_proj->Integral(low,up)>charge_cut){
 	  vecRange.push_back( make_pair(low,up) );
       }
       else{
@@ -406,7 +413,7 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
   
   // Since induced cluster sits in a relative small range,
   // it would be easier to start searching from the induced one
-  if(j.fHeight > (i.fHeight)*xtalk_threshold)
+  if(j.fHeight > xtalk_threshold)
     isCrossTalk = 0;
   else {
     if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
