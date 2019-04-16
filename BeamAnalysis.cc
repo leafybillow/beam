@@ -487,7 +487,7 @@ int BeamAnalysis::Analysis(){
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     bgTracker->LoadDetectorGeometry( fConfig );
-    bgTracker->LoadQDC(det_qdc_hr);
+
     BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
@@ -570,7 +570,7 @@ int BeamAnalysis::Analysis(){
 	vWidth[iproj] = this_plane->GetWidthX();
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
-	if(baseline_rms[iproj] > 80)
+	if(baseline_rms[iproj] > 70)
 	  isNoisy = 1;
 	charge_sum[iproj] = this_plane->GetProjectionX()->GetChargeSum();
 	vNhits[iproj] = this_plane->GetProjectionX()->GetNHits();
@@ -592,14 +592,16 @@ int BeamAnalysis::Analysis(){
       vNhits_gem[igem] =bgPlane[igem]->GetNHits();
     }
 
+    tree_raw->GetEntry(ievt+ev_shift); // shift QDC
+    bgTracker->LoadQDC(det_qdc_hr);
+    
     if(!kPlot){
-      tree_raw->GetEntry(ievt+ev_shift); // shift QDC_
       tree_rec->Fill();
     }
 
-    // if(kPlot && nTracks==1 && det_qdc_hr[0]>1100 && (!isNoisy)){
+    // if(kPlot && nTracks==1 && det_qdc_hr[0]>1500 && !isNoisy){
     // if(kPlot && (nPrimaries<nTracks) && (nPriamries>0) && (!isNoisy)){
-    if(kPlot){
+    if(kPlot && !isNoisy){
       bgTracker->PlotResults(prefix_t,ievt);
     }
 
