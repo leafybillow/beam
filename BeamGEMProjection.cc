@@ -126,13 +126,15 @@ int BeamGEMProjection::FineProcess(){
     while( it_pair!= vec_range.end() ){
       aHit.fCharge = ProcessCharge( *it_pair);
       int peak_bin = FindPeakStrip( *it_pair);
+
+      int peak_height = h_proj->GetBinContent(peak_bin);
       int isEdge = 0;
       if( peak_bin<=edge_cut || (nStrips-peak_bin)<=edge_cut)
 	isEdge = 1;
       
-      if(aHit.fCharge>charge_cut && !isEdge ){
+      if(aHit.fCharge>charge_cut && !isEdge && peak_height>500 ){
 	aHit.fPosition = ProcessCentroid( *it_pair);
-	aHit.fHeight = h_proj->GetBinContent(peak_bin);
+	aHit.fHeight = peak_height;
 	aHit.fWidth = ProcessWidth( *it_pair);
 	aHit.fRes = ProcessResolution(*it_pair);
 	aHit.pRange = *it_pair;
