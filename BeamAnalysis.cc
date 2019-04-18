@@ -321,6 +321,7 @@ int BeamAnalysis::Analysis(){
   vector <vector<double> > vCharge; //[iproj][ihits]
   vector <vector<double> > vPosition;
   vector <vector<double> > vWidth;
+  vector <vector<double> > vPeakHeight;
   vector <vector<int> > vSplit;
   vector <double> charge_sum;
   
@@ -344,6 +345,7 @@ int BeamAnalysis::Analysis(){
 
   for(int iproj=0;iproj<nproj;iproj++){
     vCharge.push_back(dummy_vec_double);
+    vPeakHeight.push_back(dummy_vec_double);    
     vPosition.push_back(dummy_vec_double);
     vWidth.push_back(dummy_vec_double);
     vSplit.push_back(dummy_vec_int);
@@ -420,6 +422,7 @@ int BeamAnalysis::Analysis(){
       TString str_key = projKey[iproj];
       const char *key = str_key.Data();
       tree_rec->Branch(Form("charge_%s",key),&vCharge[iproj]);
+      tree_rec->Branch(Form("peakHeight_%s",key),&vPeakHeight[iproj]);
       tree_rec->Branch(Form("position_%s",key),&vPosition[iproj]);
       tree_rec->Branch(Form("width_%s",key),&vWidth[iproj]);
       tree_rec->Branch(Form("split_%s",key),&vSplit[iproj]);
@@ -568,6 +571,7 @@ int BeamAnalysis::Analysis(){
 	vCharge[iproj] = this_plane->GetChargeX();
 	vPosition[iproj] = this_plane->GetPositionX();
 	vWidth[iproj] = this_plane->GetWidthX();
+	vPeakHeight[iproj] = this_plane->GetPeakHeightX();
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
 	if(baseline_rms[iproj] > 70)
@@ -579,6 +583,7 @@ int BeamAnalysis::Analysis(){
 	vCharge[iproj] = this_plane->GetChargeY();
 	vPosition[iproj] = this_plane->GetPositionY();
 	vWidth[iproj] = this_plane->GetWidthY();
+	vPeakHeight[iproj] = this_plane->GetPeakHeightY();
 	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
 	if(baseline_rms[iproj] > 80)
@@ -599,9 +604,10 @@ int BeamAnalysis::Analysis(){
       tree_rec->Fill();
     }
 
-    // if(kPlot && nTracks==1 && det_qdc_hr[0]>1500 && !isNoisy){
+    // if(kPlot && isGoldenTrack && det_qdc_hr[0]>1600 && !isNoisy){
+    // if(kPlot && nTracks>=2 && !isNoisy){
     // if(kPlot && (nPrimaries<nTracks) && (nPriamries>0) && (!isNoisy)){
-    if(kPlot && !isNoisy){
+    if(kPlot && !isNoisy ){
       bgTracker->PlotResults(prefix_t,ievt);
     }
 

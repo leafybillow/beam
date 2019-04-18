@@ -15,6 +15,8 @@ class BeamGEMPlane: public TObject{
   vector<double> fCharge_y;
   vector<double> fWidth_x; // charge amplitude, unit: adc
   vector<double> fWidth_y;
+  vector<double> fPeakHeight_x; // Peak Amplitude, unit: adc
+  vector<double> fPeakHeight_y;
 
   vector<int> fSplit_x; // Split Level
   vector<int> fSplit_y;
@@ -58,6 +60,8 @@ class BeamGEMPlane: public TObject{
   inline vector<double> GetChargeY() const {return fCharge_y;};
   inline vector<double> GetWidthX() const {return fWidth_x;};
   inline vector<double> GetWidthY() const {return fWidth_y;};
+  inline vector<double> GetPeakHeightX() const {return fPeakHeight_x;};
+  inline vector<double> GetPeakHeightY() const {return fPeakHeight_y;};
 
   inline vector<int> GetSplitX() const {return fSplit_x;};
   inline vector<int> GetSplitY() const {return fSplit_y;};

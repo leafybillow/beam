@@ -10,6 +10,7 @@ BeamGEMPlane::BeamGEMPlane()
   :fPos_x(),fPos_y(),
    fCharge_x(),fCharge_y(),
    fWidth_x(),fWidth_y(),
+   fPeakHeight_x(),fPeakHeight_y(),
    fSplit_x(),fSplit_y(),
    vHitsMask_x(),vHitsMask_y(),
    nHits(-1),
@@ -272,6 +273,7 @@ void BeamGEMPlane::CollectResults(){
       fCharge_x.push_back( (*itx).fCharge);
       fPos_x.push_back( (*itx).fPosition);
       fWidth_x.push_back( (*itx).fWidth);
+      fPeakHeight_x.push_back( (*itx).fHeight);
       itx++;
     }
 
@@ -279,6 +281,7 @@ void BeamGEMPlane::CollectResults(){
       fCharge_y.push_back( (*ity).fCharge);
       fPos_y.push_back( (*ity).fPosition);
       fWidth_y.push_back( (*ity).fWidth);
+      fPeakHeight_y.push_back( (*ity).fHeight);
       ity++;
     }
 
