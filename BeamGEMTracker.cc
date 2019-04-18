@@ -55,10 +55,10 @@ void BeamGEMTracker::Init(){
 
 void BeamGEMTracker::Process(){
   Init();
+  isGoldenTrack = 0;
   if(track_npt<=1)
     nTracks = 0;
   else if(track_npt==2){
-    isGoldenTrack = 0;
     for(int i=0; i< effNhits[1]; i++){ // starts from second GEMs which shows better correlation
       ATrack goodTrack;
       double min_slope = 10000; // some non-sense large number
@@ -81,6 +81,18 @@ void BeamGEMTracker::Process(){
     }
   }
   
+  if(nTracks==1){
+    isGoldenTrack =1;
+    
+    for(int i=0;i<nPlanes;i++){
+      int nhitx = vPlanes[i]->GetProjectionX()->GetNHits();
+      int nhity = vPlanes[i]->GetProjectionY()->GetNHits();
+
+      if(nhitx!=nhity || nhitx>1 || nhity>1)
+	isGoldenTrack = 0;
+    }
+
+  }
   vector<ATrack>::iterator it = vTracks.begin();
   while(it!=vTracks.end()){
     FitATrack(&(*it));
