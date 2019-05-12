@@ -103,7 +103,6 @@ class BeamGEMProjection: public TObject{
   
   inline vector< AHit> GetHits() const {return vHits;};
   inline Double_t GetChargeSum() const { return charge_sum;};
-  
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};

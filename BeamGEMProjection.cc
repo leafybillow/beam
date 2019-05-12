@@ -126,19 +126,28 @@ int BeamGEMProjection::FineProcess(){
     while( it_pair!= vec_range.end() ){
       aHit.fCharge = ProcessCharge( *it_pair);
       int peak_bin = FindPeakStrip( *it_pair);
+
+      int peak_height = h_proj->GetBinContent(peak_bin);
       int isEdge = 0;
       if( peak_bin<=edge_cut || (nStrips-peak_bin)<=edge_cut)
 	isEdge = 1;
       
-      if(aHit.fCharge>1000 && !isEdge ){
+      if(aHit.fCharge>charge_cut && !isEdge && peak_height>500 ){
 	aHit.fPosition = ProcessCentroid( *it_pair);
-	aHit.fHeight = h_proj->GetBinContent(peak_bin);
+	aHit.fHeight = peak_height;
 	aHit.fWidth = ProcessWidth( *it_pair);
 	aHit.fRes = ProcessResolution(*it_pair);
 	aHit.pRange = *it_pair;
 	charge_sum += aHit.fCharge;
 	vHits.push_back(aHit);
       }
+      else{
+	int low = (*it_pair).first;
+	int up = (*it_pair).second;
+	for(int i=low;i<=up;i++)
+	  h_proj->SetBinContent(i,0);
+      }
+      
       it_pair++;
     }
     it++;
@@ -194,7 +203,7 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       
       isLock = 0;
       up = iStrip;
-      if((up-low)>width_cut && h_proj->Integral(low,up)>1000){
+      if((up-low)>width_cut && h_proj->Integral(low,up)>charge_cut){
 	  vecRange.push_back( make_pair(low,up) );
       }
       else{
@@ -406,7 +415,7 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
   
   // Since induced cluster sits in a relative small range,
   // it would be easier to start searching from the induced one
-  if(j.fHeight > (i.fHeight)*xtalk_threshold)
+  if(j.fHeight > xtalk_threshold)
     isCrossTalk = 0;
   else {
     if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
