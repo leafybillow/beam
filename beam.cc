@@ -143,10 +143,10 @@ int main(int argc, char **argv){
 
 void PrintUsage(){
   cout << endl;  
-  cout<< "Beam Test Analysis Software " << endl;
+  cout<< "GEM Tracking Analysis Software for SLAC Beam Test " << endl;
   cout<< "author : Tao Ye <tao.ye@stonybrook.edu> " << endl;
   cout << endl;  
-  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-e] [-P] [-h] " << endl;
+  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-e] [-S] [-P] [-h] " << endl;
   cout<<"Options:" << endl;
   cout<< "\t" << "-h : "
       <<"Print help info " << endl;
@@ -154,7 +154,6 @@ void PrintUsage(){
       <<" Optional, available options: ped, rms, ana. " << endl;
   cout << "\t \t ana : Default mode, reconstruction and  tracking analysis" << endl;
   cout << "\t \t ped : Generate a pedestal DB file for specific run" << endl;
-  cout << "\t \t rms : Generate a pedestal RMS table file" << endl;
   
   cout<< "\t" << "-c <config_file>: "
       <<"optional, use beam.config by default " << endl;
@@ -164,8 +163,10 @@ void PrintUsage(){
       << "mandatory, if <run_num> is not specfied " << endl;
   cout<< "\t" << "-o <output_filename>: "
       <<"optional, specify output rootfile/plot name " << endl;
-  cout<< "\t" << "-e: "
+  cout<< "\t" << "-e <number of events> : "
 	<<"optional, total events to be analyzed. " << endl;
+  cout << "\t" << "-S <number of event shift> : "
+       <<"optional, number of event shift applied to QDC data. " << endl;
   cout<< "\t" << "-P: "
       <<" output plots ONLY, no rootfile will be created. " << endl;
   cout<< endl;
