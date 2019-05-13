@@ -20,6 +20,12 @@ double charge_cut = 500; // Integrated ADC sum
 BeamConfig::BeamConfig(){
   run_num= -1;
   kPlot = 0;
+
+  // Default working directory is given by environment varialbes
+  // If it is not specified, passed from config files
+
+  rootfile_path = TString(getenv("BEAM_ROOTFILES"));
+  db_path = TString(getenv("BEAM_DB_PATH"));
 }
 
 BeamConfig::~BeamConfig(){

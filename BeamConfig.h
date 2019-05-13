@@ -10,8 +10,10 @@ class BeamConfig{
 
  private:
   Double_t fZSThreshold; // Zero-Suppression threshold
+
   TString rootfile_path;
   TString rootfile_prefix;
+  
   TString db_template;
   TString db_path;
 
