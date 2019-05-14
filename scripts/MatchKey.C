@@ -1,5 +1,6 @@
 void MatchKey(Int_t run_number = 412){
-  TFile *rootfile = TFile::Open(Form("./rootfiles/run_%d_analyzed.root",run_number));
+  TString rf_path = TString(getenv("BEAM_ROOTFILES"));
+  TFile *rootfile = TFile::Open(rf_path + Form("run_%d_analyzed.root",run_number));
 
   TTree* Rec = (TTree*)rootfile->Get("Rec"); // Reconstructed Tree
 
