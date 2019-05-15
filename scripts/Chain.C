@@ -1,5 +1,5 @@
 void Chain(){
-  
+  gStyle->SetOptFit(1);
   TChain* chain = new TChain("Rec");
   chain->Add("rootfiles/run_132_analyzed.root");
   chain->Add("rootfiles/run_136_analyzed.root");
@@ -16,10 +16,6 @@ void Chain(){
   chain->Draw("det1_qdc_hr>>h1(150,800,1500)","nPrimaries==1 && isNoisy==0","goff");
   chain->Draw("det1_qdc_hr>>h2(150,800,1500)","nPrimaries==2&& isNoisy==0","goff");
   chain->Draw("det1_qdc_hr>>h3(150,800,1500)","nPrimaries==3 && isNoisy==0","goff");
-
-  // chain->Draw("det1_qdc_hr>>h1(200,800,1800)","nTracks==1","goff");
-  // chain->Draw("det1_qdc_hr>>h2(200,800,1800)","nTracks==2","goff");
-  // chain->Draw("det1_qdc_hr>>h3(200,800,1800)","nTracks==3","goff");
   
   h0->SetLineStyle(2);
   h0->SetLineWidth(2);
@@ -32,8 +28,7 @@ void Chain(){
     
   TCanvas *c2 =new TCanvas("c2","c2",800,800);
   c2->cd();
-  chain->Draw("(det1_qdc_hr-875)/5.78>>hfit(120,-2,100)","nTracks==1 && isNoisy==0","goff");
-  // chain->Draw("det1_qdc_hr-875>>hfit(150,-10,600)","nTracks==1 && isNoisy==0","goff");
+  chain->Draw("(det1_qdc_hr-875)/5.78>>hfit(120,-2,100)","isGoldenTrack && isNoisy==0","goff");
 
   TF1 *flangau = new TF1("flangau",langaufun,0,400,4);
 
