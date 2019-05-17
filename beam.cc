@@ -10,6 +10,8 @@ void PrintUsage();
 
 int main(int argc, char **argv){
   int run_num;
+  int nEvents;
+  int evt_shift = 0;
   char *configName;
   char *runType;
   char *output_name;
@@ -29,7 +31,7 @@ int main(int argc, char **argv){
   }
     
   int opt;
-  while( (opt=getopt(argc,argv,":c:r:t:f:o:hP"))!=-1){
+  while( (opt=getopt(argc,argv,":c:r:t:f:o:S:e:hP"))!=-1){
     switch(opt){
       
     case ':':
@@ -67,6 +69,12 @@ int main(int argc, char **argv){
       output_name=optarg;
       kOutputDefine=1;
       break;
+    case 'e':
+      nEvents=atoi(optarg);
+      break;
+    case 'S':
+      evt_shift=atoi(optarg);
+      break;
     case 'P':
       kPlot =1;
       break;
@@ -100,7 +108,9 @@ int main(int argc, char **argv){
 
   if(kPlot)
     fConfig->SetPlotMode(kPlot);
-  
+
+  fConfig->SetTotalEvents(nEvents);
+  fConfig->SetEventShift(evt_shift);
   int anaType =0; // ana mode by default
   if(kRunTypeDefine){
     if(strcmp(runType,"ana")==0)
@@ -133,10 +143,10 @@ int main(int argc, char **argv){
 
 void PrintUsage(){
   cout << endl;  
-  cout<< "Beam Test Analysis Software " << endl;
+  cout<< "GEM Tracking Analysis Software for SLAC Beam Test " << endl;
   cout<< "author : Tao Ye <tao.ye@stonybrook.edu> " << endl;
   cout << endl;  
-  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-P] [-h] " << endl;
+  cout<< "Usage: beam [-t] [-r] [-f] [-c] [-o] [-e] [-S] [-P] [-h] " << endl;
   cout<<"Options:" << endl;
   cout<< "\t" << "-h : "
       <<"Print help info " << endl;
@@ -144,7 +154,6 @@ void PrintUsage(){
       <<" Optional, available options: ped, rms, ana. " << endl;
   cout << "\t \t ana : Default mode, reconstruction and  tracking analysis" << endl;
   cout << "\t \t ped : Generate a pedestal DB file for specific run" << endl;
-  cout << "\t \t rms : Generate a pedestal RMS table file" << endl;
   
   cout<< "\t" << "-c <config_file>: "
       <<"optional, use beam.config by default " << endl;
@@ -154,6 +163,10 @@ void PrintUsage(){
       << "mandatory, if <run_num> is not specfied " << endl;
   cout<< "\t" << "-o <output_filename>: "
       <<"optional, specify output rootfile/plot name " << endl;
+  cout<< "\t" << "-e <number of events> : "
+	<<"optional, total events to be analyzed. " << endl;
+  cout << "\t" << "-S <number of event shift> : "
+       <<"optional, number of event shift applied to QDC data. " << endl;
   cout<< "\t" << "-P: "
       <<" output plots ONLY, no rootfile will be created. " << endl;
   cout<< endl;

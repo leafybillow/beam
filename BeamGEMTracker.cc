@@ -21,7 +21,7 @@ BeamGEMTracker::BeamGEMTracker()
    qdc_value(0),
    fGEM_z(),fHit_x(),fHit_y(),
    vPlanes(),vTracks(),
-   nTracks(0),isGoldenTrack(0),track_npt(0)
+   nTracks(0),nPrimaries(0),isGoldenTrack(0),track_npt(0)
 {
   lf = new TLinearFitter();
   lf->SetFormula("pol1");
@@ -55,81 +55,78 @@ void BeamGEMTracker::Init(){
 
 void BeamGEMTracker::Process(){
   Init();
+  isGoldenTrack = 0;
   if(track_npt<=1)
     nTracks = 0;
   else if(track_npt==2){
-    isGoldenTrack = 0;
-    for(int i=0; i< effNhits[0]; i++){
+    for(int i=0; i< effNhits[1]; i++){ // starts from second GEMs which shows better correlation
       ATrack goodTrack;
-      double min_slope = 1; // some non-sense large number
-      for(int j=0; j < effNhits[1];j++){
-	int pattern[2] = {i,j};
-	ATrack aTrack = GenerateCandidates(pattern);
-	FitATrack(&aTrack);
-	double slope = fabs(aTrack.fSlope_zy * aTrack.fSlope_zx);
-	if(slope<min_slope){
-	  min_slope = slope;
-	  goodTrack =aTrack;
+      double min_slope = 10000; // some non-sense large number
+      for(int j=0; j < effNhits[0];j++){
+	int xpattern[2] = {j,i};
+	for(int k=0; k<effNhits[0];k++){
+	  int ypattern[2] = {k,i};
+	  ATrack aTrack = GenerateCandidates(xpattern, ypattern);
+	  FitATrack(&aTrack);
+	  double slope = fabs(aTrack.fSlope_zy * aTrack.fSlope_zx);
+	  if(slope<min_slope){
+	    min_slope = slope;
+	    goodTrack =aTrack;
+	  }
 	}
       }
-      if(effNhits[1]!=0)
-	vTracks.push_back(goodTrack);	  
-      if(effNhits[1]>1){
-	int myid = goodTrack.myPattern[1];
-	SwapHits(1, myid, effNhits[1]-1);
-	effNhits[1] = effNhits[1] -1;
-      }
-      else if(effNhits[1] ==1)
-	effNhits[1] = 0;
+      AccumulatePrimaries(goodTrack);
+      vTracks.push_back(goodTrack);
+      nTracks++;
     }
   }
-  else if(track_npt>2){
-    isGoldenTrack = 1;
-    int imax = effNhits[0];
-    int jmax = effNhits[1];
-    for(int i=0; i<imax ; i++){
-      vector<ATrack> vTracks_holder;
-      for(int j=0; j < jmax;j++){
-	
-	ATrack this_track = PingForward(i,j);
-	
-	if(this_track.fChi2>0)
-	  vTracks_holder.push_back(this_track);
-	
-      }// End of second plane loop
-      
-      if(vTracks_holder.size()!=0){
-	vector<ATrack>::iterator itk = vTracks_holder.begin();
-	vector<ATrack>::iterator itk_next = itk+1;
-	while(itk_next!=vTracks_holder.end()){
-	  if( (*itk_next).fChi2< (*itk).fChi2 )
-	    itk  = itk_next;
-	  itk_next++;
-	}
-	
-	vTracks.push_back(*itk);
-	//swap out picked points
-	int myID =  ((*itk).myPattern)[1];
-	SwapHits(1,myID,jmax-1);
-	jmax= jmax-1;
-	if(effNhits[2]>1){
-	  myID = ((*itk).myPattern)[2];
-	  SwapHits(2,myID,effNhits[2]-1);
-	  effNhits[2] = effNhits[2] -1;
-	}
-	else if(effNhits[2]==1)
-	  effNhits[2] = effNhits[2] -1;
-      }
-    } // End of first plane loop
-  } // End of else if track_np>2 
   
+  if(nTracks==1){
+    isGoldenTrack =1;
+    
+    for(int i=0;i<nPlanes;i++){
+      int nhitx = vPlanes[i]->GetProjectionX()->GetNHits();
+      int nhity = vPlanes[i]->GetProjectionY()->GetNHits();
+
+      if(nhitx!=nhity || nhitx>1 || nhity>1)
+	isGoldenTrack = 0;
+    }
+
+  }
   vector<ATrack>::iterator it = vTracks.begin();
   while(it!=vTracks.end()){
     FitATrack(&(*it));
-    nTracks++;
     it++;
   }
   ProjectHits(); // To detector Planes
+}
+
+void BeamGEMTracker::AccumulatePrimaries(ATrack atrack){
+
+  if(nTracks==0)
+    nPrimaries++;
+  else{
+    double epsilon = delta_cut ; // unit: mm
+    double my_vertex_X = (atrack.x)[0];
+    double my_vertex_Y = (atrack.y)[0];
+    vector<ATrack>::iterator itrack = vTracks.begin();
+    Int_t kIsDelta = 0;
+    while(itrack!=vTracks.end()){
+      double this_vertex_X = ((*itrack).x)[0];
+      double this_vertex_Y = ((*itrack).y)[0];
+
+      if(fabs(my_vertex_Y-this_vertex_Y)<epsilon &&
+	 fabs(my_vertex_X-this_vertex_X)<epsilon ){
+	kIsDelta = 1;
+	break;
+      }
+      itrack++;
+    }
+    if(!kIsDelta)
+      nPrimaries++;
+
+  }
+  
 }
 
 void BeamGEMTracker::ProjectHits(){
@@ -175,58 +172,6 @@ void BeamGEMTracker::ProjectHits(){
   }
 }
 
-ATrack BeamGEMTracker::PingForward(int i, int j){ // hits id
-
-  // Project from i to j
-  
-  double distance_cut = 10; // (mm)
-  double distance = distance_cut; // an non-sense large number
-  
-  double z1 = fGEM_z[0];
-  double z2 = fGEM_z[1];
-  double z3 = fGEM_z[2];
-
-  double x1 = fHit_x[0][i];
-  double x2 = fHit_x[1][j];
-  double x3 = (x1-x2)/(z1-z2)*(z3-z1)+x1;
-    
-  double y1 = fHit_y[0][i];
-  double y2 = fHit_y[1][j];
-  double y3 = (y1-y2)/(z1-z2)*(z3-z1)+y1;
-
-  ATrack aTrack;
-  if(fabs(x3)>50 || fabs(y3)>100 ){ // out of boundary
-    int pattern[3] = {i,j,0}; // the last index is a dummy
-    aTrack = GenerateCandidates(pattern);
-    aTrack.fChi2 = -1; // an invalid track
-    return aTrack;
-  }
-  int nhits = effNhits[2];
-  int idFound=0;
-  int isFound=0;
-  for(int ihit=0; ihit<nhits;ihit++){
-    
-    double delta_x = fabs(fHit_x[2][ihit] - x3);
-    double delta_y = fabs(fHit_y[2][ihit] - y3);
-    if(delta_x+delta_y<distance){
-      idFound = ihit;
-      distance = delta_x + delta_y;
-      isFound = 1;
-    }
-  }
-  if(isFound){
-    int pattern[3] = {i,j,idFound};
-    aTrack = GenerateCandidates(pattern);
-    aTrack.fChi2 = distance;
-  }
-  else{
-    int pattern[3] = {i,j,0};
-    aTrack = GenerateCandidates(pattern);
-    aTrack.fChi2 = -1;
-  }
-    
-  return aTrack;
-}
 void BeamGEMTracker::SwapHits(int iplane, int i, int j){
 
   double buff_hitx = fHit_x[iplane][i];
@@ -240,16 +185,16 @@ void BeamGEMTracker::SwapHits(int iplane, int i, int j){
 
 }
 
-ATrack BeamGEMTracker::GenerateCandidates(int* pattern){
+ATrack BeamGEMTracker::GenerateCandidates(int* xpattern, int *ypattern){
   ATrack aTrack ;
   Int_t npt = fGEM_z.size();
   
   for(int ipt =0; ipt<npt; ipt++){
     (aTrack.z).push_back(fGEM_z[ipt]);
-    (aTrack.x).push_back(fHit_x[ipt][ pattern[ipt] ]);
-    (aTrack.y).push_back(fHit_y[ipt][ pattern[ipt] ]);
+    (aTrack.x).push_back(fHit_x[ipt][ xpattern[ipt] ]); // fHits[igem][ihits]
+    (aTrack.y).push_back(fHit_y[ipt][ ypattern[ipt] ]);
 
-    (aTrack.myPattern).push_back( pattern[ipt] );
+    (aTrack.myPattern).push_back( xpattern[ipt] ); // doesn't matter here
   }
   return aTrack;
 }
@@ -301,8 +246,17 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
   TH1D *h_buff;
   for(int iplane =0 ;iplane<nPlanes;iplane++){
     pad_gems->cd(iplane+1);
-    TPad* pad_gem1_y = new TPad("pad_gem1_y","",0.0,1.0 ,0.66,0.0);
-    TPad* pad_gem1_x = new TPad("pad_gem1_x","",0.66,1.0 ,1.0,0.0);
+    TPad* pad_gem1_y = new TPad("pad_gem1_y","",0.0,0.9 ,0.66,0.0);
+    TPad* pad_gem1_x = new TPad("pad_gem1_x","",0.66,0.9 ,1.0,0.0);
+    pad_gem1_y->SetLeftMargin(0.03);
+    pad_gem1_y->SetRightMargin(0.05);
+    pad_gem1_x->SetRightMargin(0.01);
+    pad_gem1_x->SetLeftMargin(0.03);
+    
+    pad_gem1_x->SetBottomMargin(0.03);
+    pad_gem1_y->SetBottomMargin(0.03);
+
+    
     pad_gem1_y->Draw();
     pad_gem1_x->Draw();
     
@@ -393,10 +347,20 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     box_zy.push_back(bgem_y);
     box_zx.push_back(bgem_x);
   }
-  
-  pad_track->Divide(1,2);
-  pad_track->cd(1);
 
+  pad_track->cd();
+  TPad* pad_track_stat = new TPad("pad_track_stat","",0.0,1.0 ,1.0,0.9);
+  TPad* pad_track_y = new TPad("pad_track_y","",0.0,0.9 ,1.0,0.45);
+  TPad* pad_track_x = new TPad("pad_track_x","",0.0,0.45 ,1.0,0.0);
+  
+  pad_track_x->SetTopMargin(0.01);
+  pad_track_y->SetTopMargin(0.01);
+
+  
+  pad_track_stat->Draw();
+  pad_track_y->Draw();
+  pad_track_x->Draw();
+  
   int nptx = vec_zpos_x.size();
   int npty = vec_zpos_y.size();
 
@@ -417,20 +381,21 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       hit_y[i] = vec_hit_y[i];
       zpos_y[i] = vec_zpos_y[i];
     }
-
+    
+    pad_track_y->cd();
     TGraph* g_zy = new TGraph(npty, zpos_y, hit_y);
     g_zy->SetMarkerSize(2);
     g_zy->SetMarkerStyle(34);
     g_zy->Draw("AP");
     g_zy->SetTitle("");
-    g_zy->GetYaxis()->SetRangeUser(-110,110);
+    g_zy->GetYaxis()->SetRangeUser(-130,130);
     g_zy->GetXaxis()->SetLimits(-10,850);
     
     for(int i=0;i<nPlanes;i++)
       box_zy[i]->Draw("l same");
 
   
-    pad_track->cd(2);
+    pad_track_x->cd();
     TGraph* g_zx = new TGraph(nptx, zpos_x, hit_x);
     g_zx->SetMarkerSize(2);
     g_zx->SetMarkerStyle(34);
@@ -443,9 +408,9 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
       box_zx[i]->Draw("l same");
 
     for(int idet=0; idet<nDets;idet++){
-      pad_track->cd(1);
+      pad_track_y->cd();
       box_det_zy[idet]->Draw("same");
-      pad_track->cd(2);
+      pad_track_x->cd();
       box_det_zx[idet]->Draw("same");
 
     }
@@ -479,20 +444,39 @@ void BeamGEMTracker::PlotResults(TString runName, int ievt){
     vlin_zx.push_back(flin_zx);
   }
   for(int i=0;i<nTracks;i++){
-    pad_track->cd(1);
+    pad_track_y->cd();
     vlin_zy[i]->Draw("same");
-    pad_track->cd(2);
+    pad_track_x->cd();
     vlin_zx[i]->Draw("same");
   }
   
-  c1->cd();
-  TString qdc_text = "QDC:";
-  qdc_text += Form("%d \t ", (int)qdc_value);
+  pad_track_stat->cd();
   
-  TText *text= new TText(0.0,0.95,
-			 Form("%s-Tracker-evt-%d, %s",
-			      runName.Data(),ievt, qdc_text.Data() ));
-  text->Draw("same");
+  TString qdc_print;
+  vector<double>::iterator iqdc = qdc_value.begin();
+  int idet = 0;
+  while(iqdc!=qdc_value.end()){
+    idet ++;
+    qdc_print += Form( "Detector %d QDC : %d ,\t ",idet, (int)(*iqdc));
+    iqdc++;
+  }
+
+  TString track_print =Form( "nTracks: %d \t nPrimaries: %d ",nTracks,nPrimaries);
+
+  TText *evt_text= new TText(0.0,0.8,
+			     Form("%s-Tracker-evt-%d",runName.Data(),ievt));
+
+  TText *qdc_text= new TText(0.0,0.4,qdc_print);
+  TText *track_text= new TText(0.0,0.0,track_print);
+
+			      
+  evt_text->SetTextSize(0.4);
+  qdc_text->SetTextSize(0.4);
+  track_text->SetTextSize(0.4);
+  
+  evt_text->Draw();
+  qdc_text->Draw();
+  track_text->Draw();
   
   c1->SaveAs(Form("%s-Tracker-evt-%d.png",
 		  runName.Data(),

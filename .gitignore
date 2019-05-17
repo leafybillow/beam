@@ -4,6 +4,7 @@
 *.txt
 *~
 *.o
+*.d
 *.so
 *Dict*
 DBfiles/*

@@ -75,7 +75,9 @@ class BeamGEMProjection: public TObject{
   int CoarseProcess();
   vector< pair<int,int> > SearchClusters();
   double ProcessCentroid(pair<int,int>);
-  double ProcessCharge(pair<int,int>); 
+  double ProcessCharge(pair<int,int>);
+  double ProcessPeakHeight(pair<int,int>);
+  int FindPeakStrip(pair<int,int>); 
   int ProcessWidth( pair<int,int>);
   vector<int> FindValleys(pair<int,int>);
 
@@ -101,7 +103,6 @@ class BeamGEMProjection: public TObject{
   
   inline vector< AHit> GetHits() const {return vHits;};
   inline Double_t GetChargeSum() const { return charge_sum;};
-  
   inline int GetNHits() const {return nHits;};
   inline TString GetProjName() const{return strProjName;};
   inline int GetNStrips() const {return nStrips;};

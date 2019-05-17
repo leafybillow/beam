@@ -63,8 +63,8 @@ int BeamGEMProjection::CoarseProcess(){
   // Compute baseline RMS and mean;
   sort(vStat.begin(), vStat.end());
   
-  baseline_mean = CalculateMean(vStat, 0.7);
-  baseline_rms = CalculateRMS(vStat, 0.7);
+  baseline_mean = CalculateMean(vStat, 0.1);
+  baseline_rms = CalculateRMS(vStat, 0.1);
   baseline_rms = sqrt( pow(baseline_rms,2) - pow(baseline_mean,2));
   
   overall_mean = CalculateMean(vStat,1.0);
@@ -124,13 +124,30 @@ int BeamGEMProjection::FineProcess(){
       
     vector< pair<int,int> >::iterator it_pair = vec_range.begin();
     while( it_pair!= vec_range.end() ){
-      aHit.fPosition = ProcessCentroid( *it_pair);
       aHit.fCharge = ProcessCharge( *it_pair);
-      aHit.fWidth = ProcessWidth( *it_pair);
-      aHit.fRes = ProcessResolution(*it_pair);
-      aHit.pRange = *it_pair;
-      charge_sum += aHit.fCharge;
-      vHits.push_back(aHit);
+      int peak_bin = FindPeakStrip( *it_pair);
+
+      int peak_height = h_proj->GetBinContent(peak_bin);
+      int isEdge = 0;
+      if( peak_bin<=edge_cut || (nStrips-peak_bin)<=edge_cut)
+	isEdge = 1;
+      
+      if(aHit.fCharge>charge_cut && !isEdge && peak_height>500 ){
+	aHit.fPosition = ProcessCentroid( *it_pair);
+	aHit.fHeight = peak_height;
+	aHit.fWidth = ProcessWidth( *it_pair);
+	aHit.fRes = ProcessResolution(*it_pair);
+	aHit.pRange = *it_pair;
+	charge_sum += aHit.fCharge;
+	vHits.push_back(aHit);
+      }
+      else{
+	int low = (*it_pair).first;
+	int up = (*it_pair).second;
+	for(int i=low;i<=up;i++)
+	  h_proj->SetBinContent(i,0);
+      }
+      
       it_pair++;
     }
     it++;
@@ -165,10 +182,8 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
   double threshold =0; // Assuming ZeroSuppression has been done in the analysis script
   
   int low=0, up=0;
-
-  int start = edge_cut +1;
-  int end = nStrips-edge_cut;
-  
+  int start = 1;
+  int end = nStrips;
   for(int iStrip= start; iStrip<=end; iStrip++){
     bin_content = h_proj->GetBinContent(iStrip);
     
@@ -188,8 +203,8 @@ vector< pair<int,int> > BeamGEMProjection::SearchClusters(){
       
       isLock = 0;
       up = iStrip;
-      if((up-low)>width_cut){
-	vecRange.push_back( make_pair(low,up) );
+      if((up-low)>width_cut && h_proj->Integral(low,up)>charge_cut){
+	  vecRange.push_back( make_pair(low,up) );
       }
       else{
 	for(int i=low;i<=up;i++)
@@ -228,6 +243,41 @@ double BeamGEMProjection::ProcessCharge( pair<int,int> prRange){
 int BeamGEMProjection::ProcessWidth(pair<int,int> prRange){
   int width = prRange.second - prRange.first+1;
   return width;
+}
+
+int BeamGEMProjection::FindPeakStrip(pair<int,int> prRange){
+  
+  int low = prRange.first;
+  int up = prRange.second;
+  int peak_bin = low;  
+  double peak_height = h_proj->GetBinContent(peak_bin);
+  double bin_val;
+
+  for(int ibin=low+1;ibin<=up;ibin++){
+    bin_val = h_proj->GetBinContent(ibin);
+    if(bin_val>peak_height){
+      peak_height = bin_val;
+      peak_bin = ibin;
+    }
+  }
+
+  return peak_bin;
+}
+
+double BeamGEMProjection::ProcessPeakHeight(pair<int,int> prRange){
+  
+  int low = prRange.first;
+  int up = prRange.second;
+  
+  double peak_height = h_proj->GetBinContent(low);
+  double bin_val ;
+  for(int ibin=low+1;ibin<=up;ibin++){
+    bin_val = h_proj->GetBinContent(ibin);
+    if(bin_val>peak_height)
+      peak_height=bin_val;
+  }
+
+  return peak_height;
 }
 
 double BeamGEMProjection::ProcessResolution(pair<int,int> prRange){
@@ -281,13 +331,11 @@ int BeamGEMProjection::CheckNStrips(){
 }
 
 void BeamGEMProjection::AddStrip(BeamGEMStrip* bgGEMStrip){
-
   double ampl = bgGEMStrip->GetAmplitude();
   int strip_id = bgGEMStrip->GetStripID();
   
   h_raw->SetBinContent(strip_id,ampl);
   vStat.push_back(ampl);
-
 }
 
 void BeamGEMProjection::PlotResults(TString runName, int ievt){
@@ -367,7 +415,7 @@ int BeamGEMProjection::TestCrossTalk(AHit i, AHit j){
   
   // Since induced cluster sits in a relative small range,
   // it would be easier to start searching from the induced one
-  if(j.fCharge > (i.fCharge)*xtalk_threshold)
+  if(j.fHeight > xtalk_threshold)
     isCrossTalk = 0;
   else {
     if( (myapv2-myapv1_up)*(myapv2-myapv1_lo) == 0) {
@@ -491,13 +539,15 @@ vector<int> BeamGEMProjection::FindValleys(pair<int,int> prRange){
 
 
 double BeamGEMProjection::CalculateMean(vector<double> aVector,
-					double portion =1.0){
+					double portion =0.0){
   double sum = 0;
   int counts = 0;
-  int nsize = aVector.size();
-  nsize = (int)(nsize * portion);
 
-  for(int i=0; i<nsize;i++){
+  int nsize = aVector.size();
+  int stop = (int)(nsize * (1.0-portion));
+  int start = (int)(nsize * portion);
+
+  for(int i=start; i<stop;i++){
     sum += aVector[i];
     counts++;
   }
@@ -511,14 +561,14 @@ double BeamGEMProjection::CalculateMean(vector<double> aVector,
 }
 
 double BeamGEMProjection::CalculateRMS(vector<double> aVector,
-				       double portion = 1.0){
+				       double portion = 0.0){
   double sum = 0;
   int counts = 0;
   
   int nsize = aVector.size();
-  nsize = (int)(nsize * portion);
-
-  for(int i=0; i<nsize;i++){
+  int stop = (int)(nsize * (1.0-portion));
+  int start = (int)(nsize * portion);
+  for(int i=start; i<stop;i++){
     sum += aVector[i] * aVector[i];
     counts++;
   }
@@ -533,7 +583,7 @@ double BeamGEMProjection::CalculateRMS(vector<double> aVector,
 
 void BeamGEMProjection::FillProjection(){
 
-  for(int i=edge_cut; i<=nStrips-edge_cut; i++){
+  for(int i=1; i<=nStrips; i++){
     double bin_content = h_raw ->GetBinContent(i);
     if( (bin_content - baseline_mean)> zs_threshold*baseline_rms )
       h_proj->SetBinContent(i,bin_content);

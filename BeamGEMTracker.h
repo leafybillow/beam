@@ -30,7 +30,7 @@ class BeamGEMTracker: public TObject{
   vector<double> fDet_width_x;
   vector<double> fDet_width_y;
   vector<double> fDet_thickness;
-  double qdc_value;
+  vector<double> qdc_value;
   
   // To-do  vector<double> rotation;
   vector<double> fGEM_z;
@@ -42,6 +42,7 @@ class BeamGEMTracker: public TObject{
   
   int nPlanes;
   int nTracks;
+  int nPrimaries; // number of primaries tracks after combining delta tracks.
   
   bool isGoldenTrack;
   bool isFound;
@@ -52,15 +53,17 @@ class BeamGEMTracker: public TObject{
   
   void Init();
   bool FitATrack(ATrack* aTrack);
-  ATrack GenerateCandidates(int* pattern);
+  ATrack GenerateCandidates(int* xpattern, int* ypattern);
   void SwapHits(int iplane, int ,int);
-  ATrack PingForward(int , int);
   void ProjectHits();
+
+  void AccumulatePrimaries(ATrack aTrack);
 public:
   BeamGEMTracker();
   ~BeamGEMTracker();
 
   inline int GetNTracks() const {return nTracks;};
+  inline int GetNPrimaries() const {return nPrimaries;};
   inline vector< vector<double> > GetDetX() const {return fDet_x;};
   inline vector< vector<double> > GetDetY() const {return fDet_y;};
   inline vector< vector<double> > GetDetTheta() const {return fDet_theta;};
@@ -69,7 +72,7 @@ public:
   inline bool IsGoldenTrack() const {return isGoldenTrack;};
 
   void LoadDetectorGeometry(BeamConfig* fConfig);
-  inline void  LoadQDC(double qdc){ qdc_value = qdc;};
+  inline void  LoadQDC(vector<double> qdc){ qdc_value = qdc;};
   void Process();
   void PlotResults(TString, int);
   void AddPlane(BeamGEMPlane* );

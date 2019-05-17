@@ -65,10 +65,11 @@ int BeamAnalysis::Process(){
     CalculateRMS();
     break;
   }
-    
   rf_raw->Close();
-  rf_output->Close();
   
+  if(!kPlot)
+    rf_output->Close();
+    
   return 0;
 }
 
@@ -111,7 +112,7 @@ int BeamAnalysis::CalculatePed(){
 
   TString strProj[nproj];
   Int_t sizeArray[nproj];
-
+  Int_t sum_strip = 0;
   for(int iproj=0; iproj<nproj;iproj++){
 
     strProj[iproj] = projKey[iproj];
@@ -120,7 +121,8 @@ int BeamAnalysis::CalculatePed(){
       sizeArray[iproj] = 256;
     else if(strProj[iproj].Contains("y"))
       sizeArray[iproj] = 512;
-    
+
+    sum_strip += sizeArray[iproj];
     hped_mean[iproj] = new TH1D(Form("hped_mean_%s",strProj[iproj].Data() ),
 				Form("Pedestal Mean vs strip, projection %s",strProj[iproj].Data()),
 				sizeArray[iproj],-0.5,sizeArray[iproj]-0.5);
@@ -133,7 +135,7 @@ int BeamAnalysis::CalculatePed(){
   Double_t ped_rms; // averaged by sqrt(6)
   
   TString draw_text, hist_name;
-  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",1e3,0.0,1e4);
+  TH1D* h_fit = new TH1D("h_fit","Buffer historgram for pedestal fit",5e2,0.0,1e4);
   
   // Retrieve Channel Mapping from rootfiles ........
   // strip_id type should be an integer, but ....it was output as a float
@@ -153,7 +155,8 @@ int BeamAnalysis::CalculatePed(){
   // This routine will not work  if ZeroSuppression is TRUE in SBS-offline
 
   cout << "--Calculating Pedestals... " << endl;
-  
+
+  Int_t counter = 0;
   for(int iproj =0; iproj< nproj; iproj++){
 
     fprintf(db_file,"\nsbs.gems.%s.ped =",strProj[iproj].Data());
@@ -180,11 +183,11 @@ int BeamAnalysis::CalculatePed(){
       hped_mean[iproj]->SetBinContent(strip+1,ped_mean);
       hped_rms[iproj]->SetBinContent(strip+1,ped_rms);
       
-      // counts++;
-      // if(counts%10==0){
-      // 	printf("\r Running %.1f %%  ",counts/total_counts*100);
-      // }
-      
+      counter++;
+      if(counter%10==0){
+      	printf("\r-- Processing %.1f %% ",(double)counter/sum_strip*100);
+	fflush(stdout);
+      }
     } 
   }
   
@@ -318,14 +321,17 @@ int BeamAnalysis::Analysis(){
   vector <vector<double> > vCharge; //[iproj][ihits]
   vector <vector<double> > vPosition;
   vector <vector<double> > vWidth;
+  vector <vector<double> > vPeakHeight;
   vector <vector<int> > vSplit;
   vector <double> charge_sum;
   
   vector <int> vNhits;
   vector <int> vNhits_gem;
+  vector <int> peakTime;
   vector <double> baseline_rms;
   vector <double> baseline_mean;
-
+  vector < vector<double> > common_mode;
+  
   // Reconstruction Detector Hits
   vector< vector<double> > vDet_x;
   vector< vector<double> > vDet_y;
@@ -339,6 +345,7 @@ int BeamAnalysis::Analysis(){
 
   for(int iproj=0;iproj<nproj;iproj++){
     vCharge.push_back(dummy_vec_double);
+    vPeakHeight.push_back(dummy_vec_double);    
     vPosition.push_back(dummy_vec_double);
     vWidth.push_back(dummy_vec_double);
     vSplit.push_back(dummy_vec_int);
@@ -346,6 +353,8 @@ int BeamAnalysis::Analysis(){
     baseline_mean.push_back(dummy_double);
     charge_sum.push_back(dummy_double);
     vNhits.push_back(dummy_int);
+    peakTime.push_back(dummy_int);
+    common_mode.push_back(dummy_vec_double);
     if(iproj%2==0)
       vNhits_gem.push_back(dummy_int);
   }
@@ -359,12 +368,20 @@ int BeamAnalysis::Analysis(){
 
   }
   int nTracks;
+  int nPrimaries;
   bool isGoldenTrack;
+  bool isNoisy;
+  
   // Initialize EventReader for Raw Tree
   vector<Int_t> vec_qdc_ch = fConfig->GetQDCChannel();
   Int_t n_qdc_ch = vec_qdc_ch.size();
-  Double_t *det_qdc_lr = new Double_t[n_qdc_ch];
-  Double_t *det_qdc_hr = new Double_t[n_qdc_ch];
+  vector<Double_t> det_qdc_lr;
+  vector<Double_t> det_qdc_hr;
+
+  for(int iqdc=0;iqdc<n_qdc_ch ;iqdc++){
+    det_qdc_lr.push_back(dummy_double);
+    det_qdc_hr.push_back(dummy_double);
+  }
 
   TTree* tree_raw = (TTree*)rf_raw->Get("T");
   // Reconstructed Tree
@@ -392,8 +409,11 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("det%d_theta",idet+1),&vDet_theta[idet]);
       tree_rec->Branch(Form("det%d_phi",idet+1),&vDet_phi[idet]);
     }
-    tree_rec->Branch("ntracks",&nTracks);
+    tree_rec->Branch("nTracks",&nTracks);
+    tree_rec->Branch("nPrimaries",&nPrimaries);
     tree_rec->Branch("isGoldenTrack",&isGoldenTrack);
+    tree_rec->Branch("isNoisy",&isNoisy);
+
   }
   
   if(!kPlot){    
@@ -402,6 +422,7 @@ int BeamAnalysis::Analysis(){
       TString str_key = projKey[iproj];
       const char *key = str_key.Data();
       tree_rec->Branch(Form("charge_%s",key),&vCharge[iproj]);
+      tree_rec->Branch(Form("peakHeight_%s",key),&vPeakHeight[iproj]);
       tree_rec->Branch(Form("position_%s",key),&vPosition[iproj]);
       tree_rec->Branch(Form("width_%s",key),&vWidth[iproj]);
       tree_rec->Branch(Form("split_%s",key),&vSplit[iproj]);
@@ -409,6 +430,8 @@ int BeamAnalysis::Analysis(){
       tree_rec->Branch(Form("ped_rms_%s",key),&baseline_rms[iproj]);
       tree_rec->Branch(Form("charge_sum_%s",key),&charge_sum[iproj]);
       tree_rec->Branch(Form("nHits_%s",key),&vNhits[iproj]);
+      tree_rec->Branch(Form("peakTime_%s",key),&peakTime[iproj]);
+      tree_rec->Branch(Form("common_mode_%s",key),&common_mode[iproj]);
     }
 
     for(int igem=0;igem<n_gem;igem++){
@@ -452,7 +475,13 @@ int BeamAnalysis::Analysis(){
 
   //*Event loop, reconstruction
   Int_t nentries = tree_raw->GetEntries();
-  for(Int_t ievt=0;ievt<nentries;ievt++){
+  Int_t nevt_config = fConfig->GetTotalEvents();
+  Int_t nevt = ( nevt_config < nentries ? nevt_config: nentries);
+  
+  Int_t ev_shift = fConfig->GetEventShift();
+  nevt = nevt - ev_shift;
+  
+  for(Int_t ievt=0;ievt<nevt;ievt++){
     if(ievt%200==0)
       cout << ievt << " events analyzed"  << endl;
     //** Retrieve replayed data from the raw tree
@@ -461,7 +490,7 @@ int BeamAnalysis::Analysis(){
     //*** GEM
     BeamGEMTracker* bgTracker = new BeamGEMTracker();
     bgTracker->LoadDetectorGeometry( fConfig );
-    bgTracker->LoadQDC(det_qdc_hr[0]);
+
     BeamGEMPlane* bgPlane[n_gem];
     BeamGEMProjection* bgProjection[nproj];
 
@@ -470,7 +499,7 @@ int BeamAnalysis::Analysis(){
     }
     for(Int_t iproj=0;iproj<nproj;iproj++){
       Int_t nChannel = (Int_t)bgData[iproj].nChannel;
-
+      peakTime[iproj] = bgData[iproj].FindPeakTime();
       bgProjection[iproj] = new BeamGEMProjection( projKey[iproj],
 						   (Int_t)bgData[iproj].nChannel);
       for(Int_t ich=0; ich<nChannel;ich++){
@@ -497,7 +526,20 @@ int BeamAnalysis::Analysis(){
       }
       else if(proj_type=="y")
 	bgPlane[gem_id-1]->AddProjectionY(bgProjection[iproj]);
-      
+
+      // Loading Common Mode Noise
+      vector<double> myCommonMode;
+      if(proj_type=="x"){
+	myCommonMode.push_back(bgData[iproj].common_mode[0]);
+	myCommonMode.push_back(bgData[iproj].common_mode[128]);
+      }
+      else if(proj_type=="y"){
+	myCommonMode.push_back(bgData[iproj].common_mode[0]);
+	myCommonMode.push_back(bgData[iproj].common_mode[128]);
+	myCommonMode.push_back(bgData[iproj].common_mode[256]);
+	myCommonMode.push_back(bgData[iproj].common_mode[384]);
+      }
+      common_mode[iproj] = myCommonMode;
     } // End Projection Loop
     vector<Double_t> gem_z ;
     gem_z = fConfig->GetZ_GEM();
@@ -515,8 +557,10 @@ int BeamAnalysis::Analysis(){
     vDet_theta = bgTracker->GetDetTheta();
     vDet_phi = bgTracker->GetDetPhi();
     nTracks = bgTracker->GetNTracks();
+    nPrimaries = bgTracker->GetNPrimaries();
     isGoldenTrack = bgTracker->IsGoldenTrack();
-    
+
+    isNoisy = 0;
     for(int iproj=0;iproj<nproj;iproj++){
       TString this_key = projKey[iproj];
       TString proj_type = this_key[0];
@@ -527,8 +571,11 @@ int BeamAnalysis::Analysis(){
 	vCharge[iproj] = this_plane->GetChargeX();
 	vPosition[iproj] = this_plane->GetPositionX();
 	vWidth[iproj] = this_plane->GetWidthX();
+	vPeakHeight[iproj] = this_plane->GetPeakHeightX();
 	baseline_mean[iproj] = this_plane->GetProjectionX()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionX()->GetBaselineRMS();
+	if(baseline_rms[iproj] > 70)
+	  isNoisy = 1;
 	charge_sum[iproj] = this_plane->GetProjectionX()->GetChargeSum();
 	vNhits[iproj] = this_plane->GetProjectionX()->GetNHits();
       }
@@ -536,8 +583,11 @@ int BeamAnalysis::Analysis(){
 	vCharge[iproj] = this_plane->GetChargeY();
 	vPosition[iproj] = this_plane->GetPositionY();
 	vWidth[iproj] = this_plane->GetWidthY();
+	vPeakHeight[iproj] = this_plane->GetPeakHeightY();
 	baseline_mean[iproj] = this_plane->GetProjectionY()->GetBaselineMean();
 	baseline_rms[iproj] = this_plane->GetProjectionY()->GetBaselineRMS();
+	if(baseline_rms[iproj] > 80)
+	  isNoisy = 1;
 	charge_sum[iproj] = this_plane->GetProjectionY()->GetChargeSum();
 	vNhits[iproj] = this_plane->GetProjectionY()->GetNHits();
       }
@@ -547,11 +597,17 @@ int BeamAnalysis::Analysis(){
       vNhits_gem[igem] =bgPlane[igem]->GetNHits();
     }
 
+    tree_raw->GetEntry(ievt+ev_shift); // shift QDC
+    bgTracker->LoadQDC(det_qdc_hr);
+    
     if(!kPlot){
       tree_rec->Fill();
     }
 
-    if(kPlot){
+    // if(kPlot && isGoldenTrack && det_qdc_hr[0]>1600 && !isNoisy){
+    // if(kPlot && nTracks>=2 && !isNoisy){
+    // if(kPlot && (nPrimaries<nTracks) && (nPriamries>0) && (!isNoisy)){
+    if(kPlot && !isNoisy ){
       bgTracker->PlotResults(prefix_t,ievt);
     }
 
@@ -570,7 +626,7 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   Int_t bin_max = h_fit->GetMaximumBin();
   Double_t bincenter = h_fit->GetBinCenter(bin_max);
   Double_t bin_content_max = h_fit->GetBinContent(bin_max);
-  Double_t rms = 50.0; // An initial guess
+  Double_t rms = h_fit->GetRMS();//50.0; // An initial guess
 
   Double_t par[3]; 
   par[0] = bin_content_max;
@@ -584,7 +640,7 @@ void BeamAnalysis::GaussianFit(TH1D *h_fit, Double_t &mean, Double_t &sigma,
   mean = f_gaus->GetParameter(1);
   sigma  = f_gaus->GetParameter(2);
   
-  h_fit->Fit("f_gaus","QNR","",mean-2*sigma,mean+2*sigma);
+  h_fit->Fit("f_gaus","QNR","",mean-sigma,mean+sigma);
 
   mean = f_gaus->GetParameter(1)/6.0; // averaged by 6
   sigma  = f_gaus->GetParameter(2)/sqrt(6);  // averaged by sqrt(6), assuming samples are not correlated

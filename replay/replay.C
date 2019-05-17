@@ -4,9 +4,6 @@
 #include "THaEvent.h"
 #include "THaAnalyzer.h"
 #include "THaApparatus.h"
-//#pragma cling load("libsbs.so");
-//#include "SBSGEMStand.h"
-//#include "SBSBigBite.h"
 
 // Replay script for SLAC beam test, 2018
 
@@ -37,7 +34,8 @@ void replay(int run_num){
   
   // Define the run(s) that we want to analyze.
   // We just set up one, but this could be many.
-  THaRun* run = new THaRun(Form("/home/yetao/workarea/slac_beam/raw_data/run_%d.dat",run_num));
+  const char* data_dir = getenv("BEAM_DATA");
+  THaRun* run = new THaRun(Form("%s/run_%d.dat",data_dir,run_num));
   run->SetLastEvent(-1);
   run->SetDataRequired(0);
   run->SetDate(TDatime());
@@ -46,9 +44,10 @@ void replay(int run_num){
   
   // Define the analysis parameters
   analyzer->SetEvent( event );
-  analyzer->SetOutFile(Form("/home/yetao/workarea/slac_beam/rootfiles/run_%d.root",run_num));
+  const char* rootfile_dir = getenv("BEAM_ROOTFILES");
+  analyzer->SetOutFile(Form("%s/run_%d.root",rootfile_dir,run_num));
+  
   // File to record cuts accounting information
   analyzer->SetSummaryFile("summary_example.log"); // optional
-  //analyzer->SetCompressionLevel(0); // turn off compression
   analyzer->Process(run);     // start the actual analysis
 }

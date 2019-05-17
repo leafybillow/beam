@@ -12,6 +12,7 @@ struct ACluster{
 struct AHit{
   double fPosition; // Hit position in this projection, unit:mm
   double fCharge; // amount of charge integrated over this hit, unit: adc
+  double fHeight; // Maximum Peak Height this hit, unit: adc
   double fRes;  // spatial resolution of this hit, unit um
   int fWidth; // A single hit width, unit: # of strips, an integer
   pair<int, int> pRange;

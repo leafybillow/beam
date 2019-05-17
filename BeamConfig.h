@@ -10,12 +10,16 @@ class BeamConfig{
 
  private:
   Double_t fZSThreshold; // Zero-Suppression threshold
+
   TString rootfile_path;
   TString rootfile_prefix;
+  
   TString db_template;
   TString db_path;
 
   Int_t run_num;
+  Int_t nEvents;
+  Int_t evt_shift;
   Bool_t kPlot;
   
   TString output_name;
@@ -52,6 +56,7 @@ class BeamConfig{
   inline TString GetOutputName() const { return output_name;};
   inline TString GetDBTemplate() const { return db_template;};
   inline Int_t GetRunNumber() const { return run_num;};
+  inline Int_t GetTotalEvents() const { return nEvents;};
   inline Int_t GetAnalysisType() const{ return analysisType;};
   inline Bool_t GetPlotMode() const{ return kPlot;};
   inline TString GetDBPath() const { return db_path;};
@@ -76,6 +81,9 @@ class BeamConfig{
   inline void SetRunNumber(Int_t i){run_num=i;};
   inline void SetConfigFile(TString str){configName=str;};
   inline void SetPlotMode(Bool_t flag){kPlot=flag;};
+  inline void SetTotalEvents(int nevts){nEvents = nevts;};
   
+  inline void SetEventShift(int shift){evt_shift = shift;};
+  inline Int_t GetEventShift() const {return evt_shift;};
   ClassDef(BeamConfig,0);
 };
