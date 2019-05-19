@@ -476,7 +476,11 @@ int BeamAnalysis::Analysis(){
   //*Event loop, reconstruction
   Int_t nentries = tree_raw->GetEntries();
   Int_t nevt_config = fConfig->GetTotalEvents();
-  Int_t nevt = ( nevt_config < nentries ? nevt_config: nentries);
+  Int_t nevt = 0;
+  if(nevt_config == -1)
+    nevt = nentries;
+  else
+    nevt = ( nevt_config < nentries ? nevt_config: nentries);
   
   Int_t ev_shift = fConfig->GetEventShift();
   nevt = nevt - ev_shift;

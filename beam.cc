@@ -9,8 +9,8 @@ using namespace std;
 void PrintUsage();
 
 int main(int argc, char **argv){
-  int run_num;
-  int nEvents;
+  int run_num = -1;
+  int nEvents =-1;
   int evt_shift = 0;
   char *configName;
   char *runType;

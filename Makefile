@@ -8,11 +8,9 @@ ROOTLIBS  := $(shell $(ROOTCONFIG) --libs) -lMinuit
 ROOTGLIBS := $(shell $(ROOTCONFIG) --glibs)
 ROOTINC :=$(shell $(ROOTCONFIG) --incdir)
 
+CXXFLAGS+= -g
 MAKEDEPEND =$(CXX)
 INCLUDES = -I$(ROOTINC)
-
-CXXFLAGS+= $(ROOTCFLAGS)
-CXXFLAGS+= -g
 
 LIBS	:= $(ROOTLIBS)
 LDFLAGS := $(shell $(ROOTCONFIG) --ldflags)
@@ -28,19 +26,19 @@ DEPS 	:= $(OBJS:.o=.d)
 all:  $(OBJS) beam.o beam_Dict libbeam beam
 
 beam_Dict: $(HDR) beam_LinkDef.h
-	rootcint -f $@.cc -c -I$(ROOTINC) $^;
-	$(CXX) $(CXXFLAGS) -c -o $@.o $@.cc ;
+	rootcint -f $@.cc -c $(INCLUDES) $^;
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $@.cc -o $@.o ;
 $(OBJS):
-	$(CXX) $(CXXFLAGS) -c -o $@ $(@:.o=.cc) ;
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $(@:.o=.cc) -o  $@ ;
 
 beam.o: beam.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $^;
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $^ -o $@;
 
 libbeam: $(OBJS) beam_Dict.o
 	$(LD) $(LDFLAGS) -shared $^ -o $@.so;
 
 beam:	$(OBJS) beam_Dict.o beam.o
-	$(LD) $(ROOTLIBS) $^ -o $@;
+	$(LD) $(CXXFLAGS) $(ROOTLIBS) $^ -o $@;
 clean:
 	rm -f *.o;
 	rm -f *Dict*;	
