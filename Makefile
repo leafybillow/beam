@@ -2,7 +2,7 @@ ROOTCONFIG = root-config
 
 CXX     =$(shell $(ROOTCONFIG) --cxx)
 GCC	=$(shell $(ROOTCONFIG) --cc)
-CXXFLAGS	= -O0 -Wall -Woverloaded-virtual -fPIC -Wextra
+CXXFLAGS	= -O0 -Wall -fPIC -Wextra
 ROOTCFLAGS:= $(shell $(ROOTCONFIG) --cflags)
 ROOTLIBS  := $(shell $(ROOTCONFIG) --libs) -lMinuit
 ROOTGLIBS := $(shell $(ROOTCONFIG) --glibs)
@@ -25,7 +25,7 @@ OBJS	:= \
 HDR	:= $(OBJS:.o=.h) BeamParameters.h BeamTypes.h
 DEPS 	:= $(OBJS:.o=.d)
 
-all:  $(OBJS) $(BINARIES) beam_Dict libbeam beam
+all:  $(OBJS) beam.o beam_Dict libbeam beam
 
 beam_Dict: $(HDR) beam_LinkDef.h
 	rootcint -f $@.cc -c -I$(ROOTINC) $^;
@@ -33,11 +33,14 @@ beam_Dict: $(HDR) beam_LinkDef.h
 $(OBJS):
 	$(CXX) $(CXXFLAGS) -c -o $@ $(@:.o=.cc) ;
 
-libbeam: $(OBJS) beam_Dict.o
-	$(LD) $(CXXFLAGS) $(LDFLAGS) -shared $^ -o $@.so;
+beam.o: beam.cc
+	$(CXX) $(CXXFLAGS) -c -o $@ $^;
 
-beam:	$(OBJS) beam_Dict.o
-	$(CXX) $(CXXFLAGS) $(ROOTLIBS) $^ $@.cc -o $@;
+libbeam: $(OBJS) beam_Dict.o
+	$(LD) $(LDFLAGS) -shared $^ -o $@.so;
+
+beam:	$(OBJS) beam_Dict.o beam.o
+	$(LD) $(ROOTLIBS) $^ -o $@;
 clean:
 	rm -f *.o;
 	rm -f *Dict*;	
