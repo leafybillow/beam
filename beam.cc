@@ -84,7 +84,7 @@ int main(int argc, char **argv){
   BeamConfig* fConfig = new BeamConfig();
   
   if(kConfigNameDefine)
-    fConfig->SetConfigFile(Form(configName));
+    fConfig->SetConfigFile(Form("%s",configName));
   else
     fConfig->SetConfigFile("beam.conf"); 
 
